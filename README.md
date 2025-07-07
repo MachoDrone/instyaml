@@ -2,6 +2,8 @@
 
 A system for creating lightweight, updateable Ubuntu Server installations using cloud-init and GitHub-hosted installer scripts.
 
+> **Note**: This project is for Ubuntu 24.04.2 Server automated installation - not related to AI model selection.
+
 ## How It Works
 
 1. **Modified ISO**: Ubuntu 24.04.2 Live Server ISO modified to include `autoinstall.yaml`
