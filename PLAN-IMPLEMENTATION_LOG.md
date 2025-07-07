@@ -390,6 +390,39 @@ Command to remove: rm -f ubuntu-24.04.2-live-server-amd64.iso
 - "❌ GRUB config missing autoinstall parameters"  
 - These may need investigation in future versions
 
+### v0.10.00 - Debugging and Inspection Fixes
+
+**User:** "⚠️ autoinstall.yaml missing GitHub URL" "❌ GRUB config missing autoinstall parameters" let's look into these now.
+
+**Root causes identified and fixed:**
+
+**1. GitHub URL Detection Issue:**
+- **Problem:** Inspection was looking for `"github.com/MachoDrone/instyaml"`
+- **Reality:** autoinstall.yaml contains `"https://raw.githubusercontent.com/MachoDrone/instyaml/main/install.sh"`
+- **Fix:** Updated pattern to search for `"MachoDrone/instyaml"` (works for both formats)
+
+**2. GRUB Configuration Issues:**
+- **Problem:** Single pattern replacement `'linux /casper/vmlinuz'` wasn't matching all GRUB variants
+- **Fix:** Added multiple pattern matching:
+  - Pattern 1: `'linux /casper/vmlinuz'` (standard)
+  - Pattern 2: `'linux\t/casper/vmlinuz'` (tab-separated)
+  - Pattern 3: Regex for any vmlinuz reference: `r'(linux\s+/casper/vmlinuz\S*)'`
+
+**3. Enhanced Debugging:**
+- Added detection for whether GRUB modification actually succeeded
+- Better inspection feedback showing exactly what was found/missing
+- Debug messages showing vmlinuz references in GRUB config
+
+**Expected improvement:** Inspection should now show:
+```
+✅ autoinstall.yaml contains GitHub URL
+✅ GRUB config contains autoinstall parameters
+```
+
+**If issues persist, debug messages will show:**
+- `🔍 Found vmlinuz references in GRUB config`
+- `⚠️ GRUB configuration unchanged - pattern not found`
+
 ---
 
 *This project implementation log documents the complete development of the INSTYAML project from initial concept to successful working implementation.*
