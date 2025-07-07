@@ -67,7 +67,7 @@ class ISOBuilder:
         self.iso_url = "https://mirror.pilotfiber.com/ubuntu-iso/24.04.2/ubuntu-24.04.2-live-server-amd64.iso"
         self.iso_filename = "ubuntu-24.04.2-live-server-amd64.iso"
         self.yaml_url = "https://raw.githubusercontent.com/MachoDrone/instyaml/main/autoinstall.yaml"
-        self.output_iso = "instyaml-ubuntu-24.04.2-autoinstall.iso"
+        self.output_iso = "instyaml-24.04.2-beta.iso"
         self.temp_dir = None
         self.is_windows = platform.system() == "Windows"
         
@@ -484,6 +484,26 @@ class ISOBuilder:
             except:
                 pass
     
+    def cleanup_ancillary_files(self):
+        """Remove temporary ancillary files created during ISO building"""
+        files_to_remove = ["iso_builder.py", "autoinstall.yaml"]
+        
+        for filename in files_to_remove:
+            if os.path.exists(filename):
+                try:
+                    os.remove(filename)
+                    print(f"🗑️ Removed {filename}")
+                except Exception as e:
+                    print(f"⚠️ Could not remove {filename}: {e}")
+    
+    def offer_cleanup_original_iso(self):
+        """Offer to remove the original Ubuntu ISO to save space"""
+        if os.path.exists(self.iso_filename):
+            print(f"\n💾 Space optimization:")
+            print(f"The original ISO ({self.iso_filename}) is still present.")
+            print(f"You can remove it to save ~3GB if you only need the custom ISO.")
+            print(f"Command to remove: rm -f {self.iso_filename}")
+        
     def cleanup(self):
         """Clean up temporary files"""
         if self.temp_dir and os.path.exists(self.temp_dir):
@@ -533,6 +553,9 @@ class ISOBuilder:
             if not self.inspect_iso():
                 print("⚠️ ISO inspection had issues - manual verification recommended")
             
+            # Clean up temporary files
+            self.cleanup_ancillary_files()
+            
             print("=" * 50)
             print("🎉 SUCCESS! Your INSTYAML ISO is ready:")
             print(f"📀 {self.output_iso}")
@@ -541,6 +564,9 @@ class ISOBuilder:
             print("1. Burn to USB with Rufus/dd")
             print("2. Boot and watch for GitHub-downloaded messages")
             print("3. Edit install.sh in GitHub to test updates")
+            
+            # Offer to remove original ISO
+            self.offer_cleanup_original_iso()
             
             return True
             
@@ -561,9 +587,9 @@ if __name__ == "__main__":
     BLUE_BOLD = '\033[1;34m'
     RESET = '\033[0m'
     
-    print(f"{BLUE_BOLD}INSTYAML ISO Builder v0.08.00{RESET}")
+    print(f"{BLUE_BOLD}INSTYAML ISO Builder v0.09.00{RESET}")
     print(f"{BLUE_BOLD}Building Ubuntu 24.04.2 with autoinstall YAML{RESET}")
-    print(f"{BLUE_BOLD}📅 Script Updated: 2025-07-07 17:50 UTC{RESET}")
+    print(f"{BLUE_BOLD}📅 Script Updated: 2025-07-07 18:35 UTC{RESET}")
     print(f"{BLUE_BOLD}🔗 https://github.com/MachoDrone/instyaml{RESET}")
     print()  # Extra space for easy finding
     
