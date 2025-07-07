@@ -13,6 +13,8 @@ import tempfile
 import shutil
 import urllib.request
 import zipfile
+import signal
+import atexit
 from pathlib import Path
 
 def install_python_dependencies():
@@ -33,6 +35,21 @@ def install_python_dependencies():
             print(f"❌ Failed to install requests: {e}")
             print("Please install manually: pip install requests")
             return False
+
+def cleanup_sudo():
+    """Global cleanup function to clear sudo cache"""
+    if platform.system() == "Linux":
+        try:
+            subprocess.run(["sudo", "-k"], check=False)
+            print("🔐 Cleared sudo credentials cache")
+        except Exception:
+            pass
+
+def signal_handler(signum, frame):
+    """Handle script interruption (Ctrl+C, etc.)"""
+    print(f"\n⚠️ Script interrupted by signal {signum}")
+    cleanup_sudo()
+    sys.exit(1)
 
 class ISOBuilder:
     def __init__(self):
@@ -390,13 +407,18 @@ class ISOBuilder:
             self.cleanup()
 
 if __name__ == "__main__":
+    # Register cleanup handlers for unexpected exits
+    signal.signal(signal.SIGINT, signal_handler)   # Ctrl+C
+    signal.signal(signal.SIGTERM, signal_handler)  # Termination signal
+    atexit.register(cleanup_sudo)  # Normal exit cleanup
+    
     # Bold blue text for header (ANSI escape codes)
     BLUE_BOLD = '\033[1;34m'
     RESET = '\033[0m'
     
-    print(f"{BLUE_BOLD}INSTYAML ISO Builder v0.3{RESET}")
+    print(f"{BLUE_BOLD}INSTYAML ISO Builder v0.4{RESET}")
     print(f"{BLUE_BOLD}Building Ubuntu 24.04.2 with autoinstall YAML{RESET}")
-    print(f"{BLUE_BOLD}📅 Script Updated: 2025-07-07 17:00 UTC{RESET}")
+    print(f"{BLUE_BOLD}📅 Script Updated: 2025-07-07 17:05 UTC{RESET}")
     print(f"{BLUE_BOLD}🔗 https://github.com/MachoDrone/instyaml{RESET}")
     print()  # Extra space for easy finding
     
