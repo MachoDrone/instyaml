@@ -228,6 +228,9 @@ class ISOBuilder:
                 
                 # Unmount
                 subprocess.run(["sudo", "umount", mount_point], check=True)
+                
+                # Make copied files writable
+                subprocess.run(["chmod", "-R", "u+w", extract_dir], check=True)
             
             print(f"✅ Extracted to {extract_dir}")
             return extract_dir
@@ -327,8 +330,14 @@ class ISOBuilder:
     def cleanup(self):
         """Clean up temporary files"""
         if self.temp_dir and os.path.exists(self.temp_dir):
-            shutil.rmtree(self.temp_dir)
-            print("🧹 Cleaned up temporary files")
+            try:
+                # Make sure all files are writable before deletion
+                subprocess.run(["chmod", "-R", "u+w", self.temp_dir], check=False)
+                shutil.rmtree(self.temp_dir)
+                print("🧹 Cleaned up temporary files")
+            except Exception as e:
+                print(f"⚠️ Cleanup warning: {e}")
+                print("Some temporary files may remain in /tmp/")
     
     def build(self):
         """Main build process"""
@@ -384,6 +393,11 @@ if __name__ == "__main__":
     print("INSTYAML ISO Builder")
     print("Building Ubuntu 24.04.2 with autoinstall YAML")
     print()
+    
+    # First, ensure Python dependencies are installed
+    if not install_python_dependencies():
+        print("❌ Failed to install Python dependencies")
+        sys.exit(1)
     
     builder = ISOBuilder()
     success = builder.build()
