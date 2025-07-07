@@ -423,6 +423,41 @@ Command to remove: rm -f ubuntu-24.04.2-live-server-amd64.iso
 - `🔍 Found vmlinuz references in GRUB config`
 - `⚠️ GRUB configuration unchanged - pattern not found`
 
+### v0.11.00 - User Prompt for Existing ISO Files
+
+**User question:** "if instyaml-ubuntu-24.04.2-autoinstall.iso already exists, it will be overwritten?"
+
+**Issue identified:** Script would silently overwrite existing ISO files without warning, potentially losing previous builds.
+
+**User choice:** "Option C: Prompt user"
+
+**Implemented solution in v0.11.00:**
+- Added `handle_existing_iso()` function
+- Detects if output ISO already exists before creation
+- Interactive prompt with three options:
+  - **[O]verwrite:** Proceed and replace existing ISO
+  - **[B]ackup:** Move existing ISO to backup (e.g., `instyaml-24.04.2-beta.iso.backup`)
+  - **[C]ancel:** Stop ISO creation and exit safely
+
+**Features:**
+- **Smart backup naming:** If `.backup` exists, creates `.backup.1`, `.backup.2`, etc.
+- **Error handling:** Graceful handling of backup failures, keyboard interrupts
+- **User-friendly:** Clear prompts and confirmation messages
+
+**Example interaction:**
+```
+⚠️ instyaml-24.04.2-beta.iso already exists
+🤔 [O]verwrite, [B]ackup, [C]ancel? B
+📦 Backed up existing ISO to: instyaml-24.04.2-beta.iso.backup
+💿 Creating new ISO: instyaml-24.04.2-beta.iso
+```
+
+**Benefits:**
+- ✅ Prevents accidental data loss
+- ✅ Preserves previous builds for comparison
+- ✅ User maintains full control over file management
+- ✅ Non-destructive default behavior
+
 ---
 
 *This project implementation log documents the complete development of the INSTYAML project from initial concept to successful working implementation.*
