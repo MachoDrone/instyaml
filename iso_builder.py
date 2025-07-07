@@ -20,7 +20,6 @@ from pathlib import Path
 # Check for sudo access immediately on Linux
 if platform.system() == "Linux":
     print("🔐 This script needs sudo access to mount ISO files.")
-    print("Please enter your password...")
     try:
         subprocess.run(["sudo", "-v"], check=True)
         print("✅ Sudo access confirmed")
@@ -331,22 +330,40 @@ class ISOBuilder:
                         self.output_iso
                     ]
             else:
-                # Linux
-                cmd = [
-                    tool,
-                    "-r", "-V", "Ubuntu 24.04.2 INSTYAML",
-                    "-J", "-joliet-long",
-                    "-b", "boot/grub/i386-pc/eltorito.img",
-                    "-no-emul-boot",
-                    "-boot-load-size", "4",
-                    "-boot-info-table",
-                    "-eltorito-alt-boot",
-                    "-e", "boot/grub/efi.img",
-                    "-no-emul-boot",
-                    "-isohybrid-gpt-basdat",
-                    "-o", self.output_iso,
-                    extract_dir
-                ]
+                # Linux - use xorriso in mkisofs compatibility mode
+                if "xorriso" in tool:
+                    cmd = [
+                        tool, "-as", "mkisofs",
+                        "-r", "-V", "Ubuntu 24.04.2 INSTYAML",
+                        "-J", "-joliet-long",
+                        "-b", "boot/grub/i386-pc/eltorito.img",
+                        "-no-emul-boot",
+                        "-boot-load-size", "4",
+                        "-boot-info-table",
+                        "-eltorito-alt-boot",
+                        "-e", "boot/grub/efi.img",
+                        "-no-emul-boot",
+                        "-isohybrid-gpt-basdat",
+                        "-o", self.output_iso,
+                        extract_dir
+                    ]
+                else:
+                    # genisoimage or mkisofs
+                    cmd = [
+                        tool,
+                        "-r", "-V", "Ubuntu 24.04.2 INSTYAML",
+                        "-J", "-joliet-long",
+                        "-b", "boot/grub/i386-pc/eltorito.img",
+                        "-no-emul-boot",
+                        "-boot-load-size", "4",
+                        "-boot-info-table",
+                        "-eltorito-alt-boot",
+                        "-e", "boot/grub/efi.img",
+                        "-no-emul-boot",
+                        "-isohybrid-gpt-basdat",
+                        "-o", self.output_iso,
+                        extract_dir
+                    ]
             
             subprocess.run(cmd, check=True)
             print(f"✅ Created {self.output_iso}")
@@ -428,9 +445,9 @@ if __name__ == "__main__":
     BLUE_BOLD = '\033[1;34m'
     RESET = '\033[0m'
     
-    print(f"{BLUE_BOLD}INSTYAML ISO Builder v0.5{RESET}")
+    print(f"{BLUE_BOLD}INSTYAML ISO Builder v0.6{RESET}")
     print(f"{BLUE_BOLD}Building Ubuntu 24.04.2 with autoinstall YAML{RESET}")
-    print(f"{BLUE_BOLD}📅 Script Updated: 2025-07-07 17:10 UTC{RESET}")
+    print(f"{BLUE_BOLD}📅 Script Updated: 2025-07-07 17:20 UTC{RESET}")
     print(f"{BLUE_BOLD}🔗 https://github.com/MachoDrone/instyaml{RESET}")
     print()  # Extra space for easy finding
     
