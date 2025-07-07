@@ -390,8 +390,10 @@ class ISOBuilder:
             self.cleanup()
 
 if __name__ == "__main__":
-    print("INSTYAML ISO Builder")
+    print("INSTYAML ISO Builder v1.1")
     print("Building Ubuntu 24.04.2 with autoinstall YAML")
+    print("📅 Script Updated: 2025-07-07 16:30 UTC")
+    print("🔗 https://github.com/MachoDrone/instyaml")
     print()
     
     # First, ensure Python dependencies are installed
