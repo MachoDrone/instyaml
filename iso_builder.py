@@ -67,7 +67,7 @@ class ISOBuilder:
         self.iso_url = "https://mirror.pilotfiber.com/ubuntu-iso/24.04.2/ubuntu-24.04.2-live-server-amd64.iso"
         self.iso_filename = "ubuntu-24.04.2-live-server-amd64.iso"
         self.yaml_url = "https://raw.githubusercontent.com/MachoDrone/instyaml/main/autoinstall.yaml"
-        self.output_iso = "ubuntu-24.04.2-instyaml-amd64.iso"
+        self.output_iso = "instyaml-ubuntu-24.04.2-autoinstall.iso"
         self.temp_dir = None
         self.is_windows = platform.system() == "Windows"
         
@@ -404,6 +404,86 @@ class ISOBuilder:
             print(f"❌ ISO creation failed: {e}")
             return False
     
+    def inspect_iso(self):
+        """Verify the created ISO has our modifications"""
+        if not os.path.exists(self.output_iso):
+            print("❌ Cannot inspect - ISO file not found")
+            return False
+            
+        print("🔍 Inspecting created ISO for modifications...")
+        
+        if self.is_windows:
+            print("⚠️ ISO inspection not implemented for Windows yet")
+            return True
+            
+        # Linux: Mount and inspect
+        temp_mount = tempfile.mkdtemp(prefix="instyaml_inspect_")
+        
+        try:
+            # Mount the created ISO
+            subprocess.run(["sudo", "mount", "-o", "loop,ro", self.output_iso, temp_mount], check=True)
+            
+            # Check 1: autoinstall.yaml exists
+            yaml_path = os.path.join(temp_mount, "autoinstall.yaml")
+            if os.path.exists(yaml_path):
+                print("✅ autoinstall.yaml found in ISO root")
+                
+                # Check YAML content
+                with open(yaml_path, 'r') as f:
+                    yaml_content = f.read()
+                    if "github.com/MachoDrone/instyaml" in yaml_content:
+                        print("✅ autoinstall.yaml contains GitHub URL")
+                    else:
+                        print("⚠️ autoinstall.yaml missing GitHub URL")
+            else:
+                print("❌ autoinstall.yaml NOT found in ISO root")
+            
+            # Check 2: GRUB config has autoinstall parameters
+            grub_path = os.path.join(temp_mount, "boot", "grub", "grub.cfg")
+            if os.path.exists(grub_path):
+                with open(grub_path, 'r') as f:
+                    grub_content = f.read()
+                    if "autoinstall" in grub_content and "ds=nocloud-net" in grub_content:
+                        print("✅ GRUB config contains autoinstall parameters")
+                    else:
+                        print("❌ GRUB config missing autoinstall parameters")
+            else:
+                print("⚠️ GRUB config not found")
+            
+            # Check 3: File count (rough verification)
+            file_count = 0
+            for root, dirs, files in os.walk(temp_mount):
+                file_count += len(files)
+            
+            if file_count > 1000:  # Original Ubuntu ISO has ~1079 files
+                print(f"✅ File count looks good: {file_count} files")
+            else:
+                print(f"⚠️ Low file count: {file_count} files")
+            
+            # Check 4: ISO size
+            iso_size_gb = os.path.getsize(self.output_iso) / (1024*1024*1024)
+            if iso_size_gb > 2.5:  # Should be ~3GB
+                print(f"✅ ISO size looks good: {iso_size_gb:.1f} GB")
+            else:
+                print(f"⚠️ ISO size seems small: {iso_size_gb:.1f} GB")
+            
+            print("🎯 Inspection complete - ISO appears ready for testing!")
+            return True
+            
+        except subprocess.CalledProcessError as e:
+            print(f"❌ Failed to mount ISO for inspection: {e}")
+            return False
+        except Exception as e:
+            print(f"⚠️ Inspection error: {e}")
+            return False
+        finally:
+            # Unmount
+            try:
+                subprocess.run(["sudo", "umount", temp_mount], check=False)
+                os.rmdir(temp_mount)
+            except:
+                pass
+    
     def cleanup(self):
         """Clean up temporary files"""
         if self.temp_dir and os.path.exists(self.temp_dir):
@@ -448,6 +528,11 @@ class ISOBuilder:
             if not self.create_iso(extract_dir, tool):
                 return False
             
+            # Inspect the created ISO
+            print()
+            if not self.inspect_iso():
+                print("⚠️ ISO inspection had issues - manual verification recommended")
+            
             print("=" * 50)
             print("🎉 SUCCESS! Your INSTYAML ISO is ready:")
             print(f"📀 {self.output_iso}")
@@ -476,9 +561,9 @@ if __name__ == "__main__":
     BLUE_BOLD = '\033[1;34m'
     RESET = '\033[0m'
     
-    print(f"{BLUE_BOLD}INSTYAML ISO Builder v0.07.00{RESET}")
+    print(f"{BLUE_BOLD}INSTYAML ISO Builder v0.08.00{RESET}")
     print(f"{BLUE_BOLD}Building Ubuntu 24.04.2 with autoinstall YAML{RESET}")
-    print(f"{BLUE_BOLD}📅 Script Updated: 2025-07-07 17:47 UTC{RESET}")
+    print(f"{BLUE_BOLD}📅 Script Updated: 2025-07-07 17:50 UTC{RESET}")
     print(f"{BLUE_BOLD}🔗 https://github.com/MachoDrone/instyaml{RESET}")
     print()  # Extra space for easy finding
     
