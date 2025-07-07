@@ -231,4 +231,39 @@ The project successfully achieves:
 
 ---
 
+## Recent Developments (Continued)
+
+### v0.6 - UX and Command Fixes
+**User:** "we don't need this single line of text: Please enter your password..."
+
+Also identified critical xorriso command failure:
+`xorriso : FAILURE : Not a known command: '-r'`
+
+**Fixed in v0.6:**
+- Removed unnecessary "Please enter your password..." text
+- Added missing `-as mkisofs` parameter to xorriso command
+- Proper command: `xorriso -as mkisofs [options...]`
+
+### v0.7 - EFI Boot Image Detection
+**Issue:** `xorriso : FAILURE : Cannot find path '/boot/grub/efi.img' in loaded ISO image`
+
+**User testing revealed:** EFI boot image path was incorrect for Ubuntu 24.04.2
+
+**Fixed in v0.7:**
+- Added `find_efi_image()` function to auto-detect correct EFI boot image path
+- Searches multiple possible locations:
+  - `boot/grub/efi.img`
+  - `EFI/boot/grubx64.efi`
+  - `casper/vmlinuz`
+  - `boot/grub/x86_64-efi/core.efi`
+- Falls back to legacy boot only if no EFI image found
+- Dynamic command building based on available boot options
+
+### Ongoing Documentation
+**User:** "will you keep the CONVERSATION_LOG.md updated as we progress, please?"
+
+**Assistant:** Committed to maintaining this log with all future developments, ensuring complete project history documentation.
+
+---
+
 *This conversation log documents the complete development of the INSTYAML project from initial concept to working implementation.*
