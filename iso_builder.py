@@ -343,8 +343,55 @@ class ISOBuilder:
         print("⚠️ No EFI image found, using legacy boot only")
         return None
     
+    def handle_existing_iso(self):
+        """Handle existing output ISO file"""
+        if not os.path.exists(self.output_iso):
+            return True  # No existing file, proceed
+        
+        print(f"⚠️ {self.output_iso} already exists")
+        while True:
+            try:
+                choice = input("🤔 [O]verwrite, [B]ackup, [C]ancel? ").strip().upper()
+                
+                if choice == 'O':
+                    print(f"🔄 Will overwrite {self.output_iso}")
+                    return True
+                    
+                elif choice == 'B':
+                    backup_name = f"{self.output_iso}.backup"
+                    counter = 1
+                    while os.path.exists(backup_name):
+                        backup_name = f"{self.output_iso}.backup.{counter}"
+                        counter += 1
+                    
+                    try:
+                        shutil.move(self.output_iso, backup_name)
+                        print(f"📦 Backed up existing ISO to: {backup_name}")
+                        return True
+                    except Exception as e:
+                        print(f"❌ Failed to backup: {e}")
+                        continue
+                        
+                elif choice == 'C':
+                    print("❌ ISO creation cancelled by user")
+                    return False
+                    
+                else:
+                    print("Please enter O, B, or C")
+                    
+            except KeyboardInterrupt:
+                print("\n❌ Cancelled by user")
+                return False
+            except EOFError:
+                print("\n❌ No input available")
+                return False
+    
     def create_iso(self, extract_dir, tool):
         """Create new ISO"""
+        # Check for existing ISO and handle user choice
+        if not self.handle_existing_iso():
+            return False
+        
         print(f"💿 Creating new ISO: {self.output_iso}")
         
         # Find EFI boot image
@@ -627,9 +674,9 @@ if __name__ == "__main__":
     BLUE_BOLD = '\033[1;34m'
     RESET = '\033[0m'
     
-    print(f"{BLUE_BOLD}INSTYAML ISO Builder v0.10.00{RESET}")
+    print(f"{BLUE_BOLD}INSTYAML ISO Builder v0.11.00{RESET}")
     print(f"{BLUE_BOLD}Building Ubuntu 24.04.2 with autoinstall YAML{RESET}")
-    print(f"{BLUE_BOLD}📅 Script Updated: 2025-07-07 18:38 UTC{RESET}")
+    print(f"{BLUE_BOLD}📅 Script Updated: 2025-07-07 18:40 UTC{RESET}")
     print(f"{BLUE_BOLD}🔗 https://github.com/MachoDrone/instyaml{RESET}")
     print()  # Extra space for easy finding
     
