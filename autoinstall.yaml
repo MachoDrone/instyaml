@@ -1,0 +1,53 @@
+#cloud-config
+autoinstall:
+  version: 1
+  
+  # Early network setup to reach GitHub
+  network:
+    network:
+      version: 2
+      ethernets:
+        any:
+          match:
+            name: "e*"
+          dhcp4: true
+          dhcp6: false
+  
+  # Skip most of the normal installation
+  source:
+    id: ubuntu-server-minimal
+  
+  # Basic user (will be customized by your script)
+  identity:
+    hostname: test-system
+    username: installer
+    password: '$6$rounds=4096$saltsaltsal$L/Owq4aPgbaQ7O5m6zQ4nf0H.p4mMOO4W.9qCOWh/...'  # "password"
+  
+  # The magic happens in late-commands
+  late-commands:
+    # Download and execute your installer script from GitHub
+    - |
+      echo "=== INSTYAML BOOT TEST STARTING ==="
+      echo "Downloading installer script from GitHub..."
+      
+      # Download the installer script
+      curl -L -o /target/tmp/install.sh https://raw.githubusercontent.com/MachoDrone/instyaml/main/install.sh
+      
+      if [ $? -eq 0 ]; then
+        echo "Successfully downloaded installer script"
+        chmod +x /target/tmp/install.sh
+        
+        # Execute the installer script in chroot
+        echo "Executing installer script..."
+        chroot /target /tmp/install.sh
+      else
+        echo "ERROR: Failed to download installer script from GitHub"
+        echo "Check network connectivity and GitHub repository"
+      fi
+      
+      echo "=== INSTYAML BOOT TEST COMPLETE ==="
+      echo "Press any key to continue..."
+      read -n 1
+  
+  # Reboot after completion
+  shutdown: reboot
