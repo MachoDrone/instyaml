@@ -17,6 +17,18 @@ import signal
 import atexit
 from pathlib import Path
 
+# Check for sudo access immediately on Linux
+if platform.system() == "Linux":
+    print("🔐 This script needs sudo access to mount ISO files.")
+    print("Please enter your password...")
+    try:
+        subprocess.run(["sudo", "-v"], check=True)
+        print("✅ Sudo access confirmed")
+    except subprocess.CalledProcessError:
+        print("❌ Sudo access required for ISO mounting")
+        sys.exit(1)
+    print()
+
 def install_python_dependencies():
     """Auto-install required Python packages"""
     print("🔍 Checking Python dependencies...")
@@ -416,25 +428,11 @@ if __name__ == "__main__":
     BLUE_BOLD = '\033[1;34m'
     RESET = '\033[0m'
     
-    print(f"{BLUE_BOLD}INSTYAML ISO Builder v0.4{RESET}")
+    print(f"{BLUE_BOLD}INSTYAML ISO Builder v0.5{RESET}")
     print(f"{BLUE_BOLD}Building Ubuntu 24.04.2 with autoinstall YAML{RESET}")
-    print(f"{BLUE_BOLD}📅 Script Updated: 2025-07-07 17:05 UTC{RESET}")
+    print(f"{BLUE_BOLD}📅 Script Updated: 2025-07-07 17:10 UTC{RESET}")
     print(f"{BLUE_BOLD}🔗 https://github.com/MachoDrone/instyaml{RESET}")
     print()  # Extra space for easy finding
-    
-    # Check if we're on Linux and will need sudo
-    if platform.system() == "Linux":
-        print("🔐 This script needs sudo access to mount ISO files.")
-        print("Please enter your password when prompted...")
-        
-        # Test sudo access early
-        try:
-            subprocess.run(["sudo", "-v"], check=True)
-            print("✅ Sudo access confirmed")
-        except subprocess.CalledProcessError:
-            print("❌ Sudo access required for ISO mounting")
-            sys.exit(1)
-        print()
     
     # First, ensure Python dependencies are installed
     if not install_python_dependencies():
