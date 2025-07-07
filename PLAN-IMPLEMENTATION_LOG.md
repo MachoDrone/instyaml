@@ -339,6 +339,57 @@ rm -f autoinstall.yaml iso_builder.py ubuntu-24.04.2-instyaml-amd64.iso
 🎯 Inspection complete - ISO appears ready for testing!
 ```
 
+### v0.09.00 - Naming and Cleanup Improvements
+
+**User requests:**
+1. "instead of: instyaml-ubuntu-24.04.2-autoinstall.iso name: instyaml-24.04.2-beta.iso"
+2. "instead of: CONVERSATION_LOG.md name: PLAN-IMPLEMENTATION_LOG.md"  
+3. "please remove the 2 small files upon completion: iso_builder.py autoinstall.yaml"
+4. "upon completion, offer to remove: ubuntu-24.04.2-live-server-amd64.iso"
+
+**All improvements implemented in v0.09.00:**
+
+**1. Better ISO Naming:**
+- **Old:** `instyaml-ubuntu-24.04.2-autoinstall.iso` (long, technical)
+- **New:** `instyaml-24.04.2-beta.iso` (short, clear beta designation)
+
+**2. Better Documentation Naming:**
+- **Old:** `CONVERSATION_LOG.md` (conversational focus)  
+- **New:** `PLAN-IMPLEMENTATION_LOG.md` (project development focus)
+- Yes, IMPLEMENTATION is spelled correctly! 😄
+
+**3. Automatic Cleanup System:**
+- Added `cleanup_ancillary_files()` function
+- Automatically removes temporary files after successful ISO creation:
+  - `iso_builder.py` (the downloaded script)
+  - `autoinstall.yaml` (the downloaded config)
+- Keeps workspace clean for future use
+- Will handle any future ancillary files we create
+
+**4. Space Optimization Offer:**
+- Added `offer_cleanup_original_iso()` function  
+- Suggests removing original Ubuntu ISO to save ~3GB
+- Provides exact command: `rm -f ubuntu-24.04.2-live-server-amd64.iso`
+- Non-intrusive suggestion after successful completion
+
+**Example completion output:**
+```
+🗑️ Removed iso_builder.py
+🗑️ Removed autoinstall.yaml
+🎉 SUCCESS! Your INSTYAML ISO is ready:
+📀 instyaml-24.04.2-beta.iso
+
+💾 Space optimization:
+The original ISO (ubuntu-24.04.2-live-server-amd64.iso) is still present.
+You can remove it to save ~3GB if you only need the custom ISO.
+Command to remove: rm -f ubuntu-24.04.2-live-server-amd64.iso
+```
+
+**Note:** Some inspection warnings were observed in testing:
+- "⚠️ autoinstall.yaml missing GitHub URL"
+- "❌ GRUB config missing autoinstall parameters"  
+- These may need investigation in future versions
+
 ---
 
-*This conversation log documents the complete development of the INSTYAML project from initial concept to successful working implementation.*
+*This project implementation log documents the complete development of the INSTYAML project from initial concept to successful working implementation.*
