@@ -285,16 +285,43 @@ class ISOBuilder:
             with open(grub_cfg, 'r') as f:
                 content = f.read()
             
-            # Add autoinstall to kernel parameters
+            # Add autoinstall to kernel parameters (try multiple patterns)
+            original_content = content
+            
+            # Pattern 1: Standard casper boot
             content = content.replace(
                 'linux /casper/vmlinuz',
                 'linux /casper/vmlinuz autoinstall ds=nocloud-net\\;s=cd:/'
             )
             
+            # Pattern 2: Alternative patterns
+            if content == original_content:
+                content = content.replace(
+                    'linux\t/casper/vmlinuz',
+                    'linux\t/casper/vmlinuz autoinstall ds=nocloud-net\\;s=cd:/'
+                )
+            
+            # Pattern 3: Any vmlinuz reference
+            if content == original_content:
+                import re
+                content = re.sub(
+                    r'(linux\s+/casper/vmlinuz\S*)',
+                    r'\1 autoinstall ds=nocloud-net\;s=cd:/',
+                    content
+                )
+            
             with open(grub_cfg, 'w') as f:
                 f.write(content)
             
-            print("✅ Modified GRUB configuration")
+            if content != original_content:
+                print("✅ Modified GRUB configuration")
+            else:
+                print("⚠️ GRUB configuration unchanged - pattern not found")
+                # Debug: show what patterns exist
+                if 'vmlinuz' in original_content:
+                    print("🔍 Found vmlinuz references in GRUB config")
+                else:
+                    print("🔍 No vmlinuz references found in GRUB config")
         
         return True
     
@@ -431,7 +458,7 @@ class ISOBuilder:
                 # Check YAML content
                 with open(yaml_path, 'r') as f:
                     yaml_content = f.read()
-                    if "github.com/MachoDrone/instyaml" in yaml_content:
+                    if "MachoDrone/instyaml" in yaml_content:
                         print("✅ autoinstall.yaml contains GitHub URL")
                     else:
                         print("⚠️ autoinstall.yaml missing GitHub URL")
@@ -443,10 +470,23 @@ class ISOBuilder:
             if os.path.exists(grub_path):
                 with open(grub_path, 'r') as f:
                     grub_content = f.read()
-                    if "autoinstall" in grub_content and "ds=nocloud-net" in grub_content:
+                    has_autoinstall = "autoinstall" in grub_content
+                    has_datasource = "ds=nocloud-net" in grub_content or "ds=nocloud" in grub_content
+                    
+                    if has_autoinstall and has_datasource:
                         print("✅ GRUB config contains autoinstall parameters")
+                    elif has_autoinstall:
+                        print("⚠️ GRUB config has autoinstall but missing datasource")
+                    elif has_datasource:
+                        print("⚠️ GRUB config has datasource but missing autoinstall")
                     else:
                         print("❌ GRUB config missing autoinstall parameters")
+                        
+                        # Debug: show what we found
+                        if "vmlinuz" in grub_content:
+                            print("🔍 Debug: Found vmlinuz in GRUB, but no autoinstall params")
+                        else:
+                            print("🔍 Debug: No vmlinuz found in GRUB config")
             else:
                 print("⚠️ GRUB config not found")
             
@@ -587,9 +627,9 @@ if __name__ == "__main__":
     BLUE_BOLD = '\033[1;34m'
     RESET = '\033[0m'
     
-    print(f"{BLUE_BOLD}INSTYAML ISO Builder v0.09.00{RESET}")
+    print(f"{BLUE_BOLD}INSTYAML ISO Builder v0.10.00{RESET}")
     print(f"{BLUE_BOLD}Building Ubuntu 24.04.2 with autoinstall YAML{RESET}")
-    print(f"{BLUE_BOLD}📅 Script Updated: 2025-07-07 18:35 UTC{RESET}")
+    print(f"{BLUE_BOLD}📅 Script Updated: 2025-07-07 18:38 UTC{RESET}")
     print(f"{BLUE_BOLD}🔗 https://github.com/MachoDrone/instyaml{RESET}")
     print()  # Extra space for easy finding
     
