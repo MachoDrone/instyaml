@@ -304,6 +304,41 @@ cd ~/iso
 rm -f autoinstall.yaml iso_builder.py ubuntu-24.04.2-instyaml-amd64.iso
 ```
 
+### v0.08.00 - ISO Inspection and Naming Improvements
+
+**User questions:**
+1. "is there an inspection you can run at the end that the modifications you performed exist on the ISO to be sure it boots and has what it needs?"
+2. "are you using the same iso name as the ISO we downloaded? lol we should probably have a different ISO name."
+
+**Excellent points addressed in v0.08.00:**
+
+**1. ISO Inspection System:**
+- Added `inspect_iso()` function for post-creation verification
+- Mounts created ISO (read-only) and verifies:
+  - ✅ `autoinstall.yaml` exists in ISO root
+  - ✅ `autoinstall.yaml` contains GitHub URL
+  - ✅ GRUB config contains autoinstall parameters
+  - ✅ File count looks reasonable (~1079+ files)
+  - ✅ ISO size is appropriate (~3GB)
+- Provides confidence that ISO will boot and function correctly
+- Runs automatically after ISO creation
+
+**2. ISO Naming Fix:**
+- **Old confusing name:** `ubuntu-24.04.2-instyaml-amd64.iso` (similar to original)
+- **New clear name:** `instyaml-ubuntu-24.04.2-autoinstall.iso`
+- Makes it obvious which is the original and which is the modified version
+
+**Example inspection output:**
+```
+🔍 Inspecting created ISO for modifications...
+✅ autoinstall.yaml found in ISO root
+✅ autoinstall.yaml contains GitHub URL
+✅ GRUB config contains autoinstall parameters
+✅ File count looks good: 1079 files
+✅ ISO size looks good: 3.0 GB
+🎯 Inspection complete - ISO appears ready for testing!
+```
+
 ---
 
 *This conversation log documents the complete development of the INSTYAML project from initial concept to successful working implementation.*
