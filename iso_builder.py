@@ -298,9 +298,30 @@ class ISOBuilder:
         
         return True
     
+    def find_efi_image(self, extract_dir):
+        """Find the correct EFI boot image path"""
+        possible_paths = [
+            "boot/grub/efi.img",
+            "EFI/boot/grubx64.efi", 
+            "casper/vmlinuz",
+            "boot/grub/x86_64-efi/core.efi"
+        ]
+        
+        for path in possible_paths:
+            full_path = os.path.join(extract_dir, path)
+            if os.path.exists(full_path):
+                print(f"✅ Found EFI image: {path}")
+                return path
+        
+        print("⚠️ No EFI image found, using legacy boot only")
+        return None
+    
     def create_iso(self, extract_dir, tool):
         """Create new ISO"""
         print(f"💿 Creating new ISO: {self.output_iso}")
+        
+        # Find EFI boot image
+        efi_image = self.find_efi_image(extract_dir)
         
         try:
             if self.is_windows:
@@ -339,14 +360,20 @@ class ISOBuilder:
                         "-b", "boot/grub/i386-pc/eltorito.img",
                         "-no-emul-boot",
                         "-boot-load-size", "4",
-                        "-boot-info-table",
-                        "-eltorito-alt-boot",
-                        "-e", "boot/grub/efi.img",
-                        "-no-emul-boot",
-                        "-isohybrid-gpt-basdat",
-                        "-o", self.output_iso,
-                        extract_dir
+                        "-boot-info-table"
                     ]
+                    
+                    # Add EFI boot if available
+                    if efi_image:
+                        cmd.extend([
+                            "-eltorito-alt-boot",
+                            "-e", efi_image,
+                            "-no-emul-boot",
+                            "-isohybrid-gpt-basdat"
+                        ])
+                    
+                    cmd.extend(["-o", self.output_iso, extract_dir])
+                    
                 else:
                     # genisoimage or mkisofs
                     cmd = [
@@ -356,14 +383,18 @@ class ISOBuilder:
                         "-b", "boot/grub/i386-pc/eltorito.img",
                         "-no-emul-boot",
                         "-boot-load-size", "4",
-                        "-boot-info-table",
-                        "-eltorito-alt-boot",
-                        "-e", "boot/grub/efi.img",
-                        "-no-emul-boot",
-                        "-isohybrid-gpt-basdat",
-                        "-o", self.output_iso,
-                        extract_dir
+                        "-boot-info-table"
                     ]
+                    
+                    # Add EFI boot if available
+                    if efi_image:
+                        cmd.extend([
+                            "-eltorito-alt-boot",
+                            "-e", efi_image,
+                            "-no-emul-boot"
+                        ])
+                    
+                    cmd.extend(["-o", self.output_iso, extract_dir])
             
             subprocess.run(cmd, check=True)
             print(f"✅ Created {self.output_iso}")
@@ -445,9 +476,9 @@ if __name__ == "__main__":
     BLUE_BOLD = '\033[1;34m'
     RESET = '\033[0m'
     
-    print(f"{BLUE_BOLD}INSTYAML ISO Builder v0.6{RESET}")
+    print(f"{BLUE_BOLD}INSTYAML ISO Builder v0.7{RESET}")
     print(f"{BLUE_BOLD}Building Ubuntu 24.04.2 with autoinstall YAML{RESET}")
-    print(f"{BLUE_BOLD}📅 Script Updated: 2025-07-07 17:20 UTC{RESET}")
+    print(f"{BLUE_BOLD}📅 Script Updated: 2025-07-07 17:40 UTC{RESET}")
     print(f"{BLUE_BOLD}🔗 https://github.com/MachoDrone/instyaml{RESET}")
     print()  # Extra space for easy finding
     
