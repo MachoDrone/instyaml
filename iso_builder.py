@@ -11,9 +11,28 @@ import platform
 import subprocess
 import tempfile
 import shutil
-import requests
-from pathlib import Path
 import urllib.request
+import zipfile
+from pathlib import Path
+
+def install_python_dependencies():
+    """Auto-install required Python packages"""
+    print("🔍 Checking Python dependencies...")
+    
+    try:
+        import requests
+        print("✅ requests already installed")
+        return True
+    except ImportError:
+        print("📦 Installing requests package...")
+        try:
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "requests"])
+            print("✅ Successfully installed requests")
+            return True
+        except subprocess.CalledProcessError as e:
+            print(f"❌ Failed to install requests: {e}")
+            print("Please install manually: pip install requests")
+            return False
 
 class ISOBuilder:
     def __init__(self):
@@ -24,33 +43,105 @@ class ISOBuilder:
         self.temp_dir = None
         self.is_windows = platform.system() == "Windows"
         
+    def download_portable_tool(self, url, filename):
+        """Download portable tool for Windows"""
+        print(f"📥 Downloading {filename}...")
+        try:
+            urllib.request.urlretrieve(url, filename)
+            print(f"✅ Downloaded {filename}")
+            return True
+        except Exception as e:
+            print(f"❌ Failed to download {filename}: {e}")
+            return False
+    
+    def install_windows_dependencies(self):
+        """Install portable tools for Windows"""
+        print("🔧 Installing Windows dependencies...")
+        
+        # Check for xorriso first
+        if os.path.exists("xorriso.exe"):
+            print("✅ xorriso.exe already available")
+            return "xorriso.exe"
+        
+        if shutil.which("xorriso.exe"):
+            print("✅ xorriso.exe found in PATH")
+            return "xorriso.exe"
+        
+        # Download portable xorriso
+        xorriso_url = "https://www.gnu.org/software/xorriso/xorriso-1.5.6.win32.zip"
+        print("📦 Downloading portable xorriso...")
+        
+        try:
+            # Download xorriso zip
+            zip_file = "xorriso.zip"
+            urllib.request.urlretrieve(xorriso_url, zip_file)
+            print("✅ Downloaded xorriso.zip")
+            
+            # Extract xorriso.exe
+            print("📂 Extracting xorriso.exe...")
+            with zipfile.ZipFile(zip_file, 'r') as zip_ref:
+                # Look for xorriso.exe in the zip
+                for file_info in zip_ref.filelist:
+                    if file_info.filename.endswith('xorriso.exe'):
+                        # Extract just this file to current directory
+                        file_info.filename = 'xorriso.exe'
+                        zip_ref.extract(file_info, '.')
+                        print("✅ Extracted xorriso.exe")
+                        
+                        # Clean up zip file
+                        os.remove(zip_file)
+                        return "xorriso.exe"
+                
+                print("❌ xorriso.exe not found in zip file")
+                return None
+            
+        except Exception as e:
+            print(f"❌ Failed to setup xorriso: {e}")
+            print("Please install manually:")
+            print("1. Download xorriso from https://www.gnu.org/software/xorriso/")
+            print("2. Place xorriso.exe in this script's folder")
+            return None
+    
+    def install_linux_dependencies(self):
+        """Auto-install Linux dependencies"""
+        print("🔧 Installing Linux dependencies...")
+        
+        # Check what's already available
+        tools = ["xorriso", "genisoimage", "mkisofs"]
+        for tool in tools:
+            if shutil.which(tool):
+                print(f"✅ {tool} already installed")
+                return tool
+        
+        # Try to install xorriso and genisoimage
+        print("📦 Installing xorriso and genisoimage...")
+        try:
+            subprocess.check_call(["sudo", "apt", "update"])
+            subprocess.check_call(["sudo", "apt", "install", "-y", "xorriso", "genisoimage"])
+            
+            # Check what got installed
+            for tool in tools:
+                if shutil.which(tool):
+                    print(f"✅ Successfully installed {tool}")
+                    return tool
+            
+            print("❌ Installation completed but tools not found in PATH")
+            return None
+            
+        except subprocess.CalledProcessError as e:
+            print(f"❌ Failed to install dependencies: {e}")
+            print("Please install manually:")
+            print("sudo apt install xorriso genisoimage")
+            return None
+    
     def check_dependencies(self):
-        """Check if required tools are available"""
-        print("🔍 Checking dependencies...")
+        """Check and install required tools"""
+        print("🔍 Checking system dependencies...")
         
         if self.is_windows:
-            # Check for xorriso or oscdimg
-            tools = ["xorriso.exe", "oscdimg.exe"]
-            for tool in tools:
-                if shutil.which(tool):
-                    print(f"✅ Found {tool}")
-                    return tool
-            
-            print("❌ Missing ISO creation tools")
-            print("Install xorriso or Windows ADK (oscdimg)")
-            print("Recommendation: Download xorriso for Windows")
-            return None
+            return self.install_windows_dependencies()
         else:
-            # Linux: check for xorriso, genisoimage, or mkisofs
-            tools = ["xorriso", "genisoimage", "mkisofs"]
-            for tool in tools:
-                if shutil.which(tool):
-                    print(f"✅ Found {tool}")
-                    return tool
-            
-            print("❌ Missing ISO creation tools")
-            print("Install with: sudo apt install xorriso genisoimage")
-            return None
+            return self.install_linux_dependencies()
     
     def download_iso(self):
         """Download Ubuntu ISO if not present"""
@@ -62,6 +153,9 @@ class ISOBuilder:
         print(f"From: {self.iso_url}")
         
         try:
+            # Import requests (should be installed by now)
+            import requests
+            
             # Download with progress
             response = requests.get(self.iso_url, stream=True)
             response.raise_for_status()
@@ -90,6 +184,7 @@ class ISOBuilder:
         print("📥 Downloading autoinstall.yaml from GitHub...")
         
         try:
+            import requests
             response = requests.get(self.yaml_url)
             response.raise_for_status()
             
