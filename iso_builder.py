@@ -4,13 +4,14 @@ INSTYAML ISO Builder
 Downloads Ubuntu 24.04.2 ISO, adds autoinstall YAML, and creates bootable ISO
 Works on Windows and Linux
 
-v0.00.28 (2025-01-09): EFI Boot Fix + xorriso Compatibility Improvements  
+v0.00.29 (2025-01-09): Final EFI Boot Fix - Path and Parameter Corrections
 - CRITICAL FIX: Proper GPT partition table creation for UEFI firmware compatibility
-- Smart EFI boot detection: Prefers Ubuntu's efi.img, falls back to bootx64.efi
+- FIXED: append_partition parameter now uses full path to bootx64.efi
+- FIXED: Removed duplicate partition_offset parameters causing conflicts
 - FIXED: xorriso cylinder parameter limit (1024 -> 255 max allowed)
 - FIXED: Missing syslinux dependency auto-installation
 - Enhanced error handling for missing isohdpfx.bin
-- Dynamic hybrid MBR path detection with graceful fallback
+- Smart EFI boot detection: Prefers Ubuntu's efi.img, falls back to bootx64.efi
 - Cross-platform Windows/Linux EFI support improvements
 """
 
@@ -478,15 +479,15 @@ class ISOBuilder:
                         
                         # Add EFI system partition (Type 0xEF) - Critical for UEFI firmware recognition
                         if os.path.exists(bootx64_path):
+                            # Use full path for append_partition
                             cmd.extend([
-                                "-append_partition", "2", "0xef", "EFI/boot/bootx64.efi"
+                                "-append_partition", "2", "0xef", bootx64_path
                             ])
                             print("🔧 Added EFI system partition for UEFI recognition")
                         
                     
-                    # Add hybrid boot and partition support (Ubuntu parameters)
+                    # Add output file and source directory
                     cmd.extend([
-                        "-partition_offset", "16",  # Ubuntu uses this for hybrid boot
                         "-o", self.output_iso,
                         extract_dir
                     ])
@@ -576,15 +577,15 @@ class ISOBuilder:
                         
                         # Add EFI system partition (Type 0xEF) - Critical for UEFI firmware recognition
                         if os.path.exists(bootx64_path):
+                            # Use full path for append_partition
                             cmd.extend([
-                                "-append_partition", "2", "0xef", "EFI/boot/bootx64.efi"
+                                "-append_partition", "2", "0xef", bootx64_path
                             ])
                             print("🔧 Added EFI system partition for UEFI recognition")
                         
                     
-                    # Add hybrid boot and partition support (Ubuntu parameters)
+                    # Add output file and source directory
                     cmd.extend([
-                        "-partition_offset", "16",  # Ubuntu uses this for hybrid boot
                         "-o", self.output_iso, 
                         extract_dir
                     ])
@@ -844,8 +845,8 @@ if __name__ == "__main__":
     print()
     print(f"               {DGREEN}N O S A N A{NC}")
     print()
-    print(f"{DGREEN}Building Ubuntu 24.04.2 with autoinstall YAML - v0.00.28{NC}")
-    print("📅 Script Updated: 2025-01-09 15:00 UTC - EFI Boot Fix + xorriso Compatibility")
+    print(f"{DGREEN}Building Ubuntu 24.04.2 with autoinstall YAML - v0.00.29{NC}")
+    print("📅 Script Updated: 2025-01-09 15:30 UTC - Final EFI Boot Fix")
     print()
     
     # Check for sudo access on Linux
