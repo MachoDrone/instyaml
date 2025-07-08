@@ -714,4 +714,68 @@ network:
 
 ---
 
+## Piped Execution and UX Improvements
+
+### v0.15.00 - Piped Execution and User Interface Fix
+**Date:** 2025-07-07 21:15 UTC
+
+**Problem identified:** User testing revealed multiple UX issues when running via piped execution:
+
+```bash
+wget -qO- https://raw.githubusercontent.com/MachoDrone/instyaml/main/iso_builder.py | python3
+```
+
+**Issues discovered:**
+1. **Piped execution input failure** - `input()` calls fail with "❌ No input available" 
+2. **Poor formatting** - Missing spacing around warning messages
+3. **Invisible warnings** - Warning text not bold/colored enough
+4. **CDN cache delay** - Latest version (v0.14.00) not yet available via wget
+
+**Root cause analysis:**
+- **Piped stdin issue:** When script is piped to `python3`, `stdin` is not connected to terminal
+- **`input()` failure:** Results in `EOFError` and immediate script termination
+- **UX expectations:** User expected bold red warning with proper spacing
+
+**Solution implemented:**
+
+**1. Interactive Environment Detection:**
+```python
+import sys
+if not sys.stdin.isatty():
+    # Non-interactive mode detected
+    print("🤔 Non-interactive mode detected - defaulting to [C]ancel")
+    print("💡 Run script interactively to choose [O]verwrite or [B]ackup")
+    return False
+```
+
+**2. Enhanced Formatting:**
+```python
+print()  # Extra space before warning
+print(f"\033[1;31m⚠️ {self.output_iso} already exists\033[0m")  # Bold red warning
+choice = input("🤔 [O]verwrite, [B]ackup, [C]ancel? ").strip().upper()
+print()  # Blank line after user choice
+```
+
+**3. Safe Default Behavior:**
+- **Piped execution:** Automatically defaults to **[C]ancel** (safe, non-destructive)
+- **Interactive execution:** Prompts user with improved formatting
+- **Clear guidance:** Explains how to run interactively for full control
+
+**Key improvements:**
+- ✅ **Piped execution works** without input errors
+- ✅ **Bold red warning** text with ANSI escape codes  
+- ✅ **Proper spacing** before and after warning messages
+- ✅ **Safe default behavior** - never overwrites files in non-interactive mode
+- ✅ **Clear user guidance** for interactive vs piped execution modes
+- ✅ **Graceful error handling** for all input scenarios
+
+**Expected behavior:**
+- **Piped execution:** Shows helpful message, defaults to cancel, maintains file safety
+- **Interactive execution:** Beautiful formatting with bold red warnings and proper spacing
+- **User choice flow:** Blank line after selection for clean output formatting
+
+**This completes the user experience refinements** identified during real-world testing, ensuring INSTYAML works seamlessly in both automated and interactive scenarios.
+
+---
+
 *This project implementation log documents the complete development of the INSTYAML project from initial concept to successful working implementation.*

@@ -341,10 +341,22 @@ class ISOBuilder:
         if not os.path.exists(self.output_iso):
             return True  # No existing file, proceed
         
-        print(f"⚠️ {self.output_iso} already exists")
+        # Check if we're in a piped/non-interactive environment
+        import sys
+        if not sys.stdin.isatty():
+            print()  # Extra space before warning
+            print(f"\033[1;31m⚠️ {self.output_iso} already exists\033[0m")  # Bold red warning
+            print("🤔 Non-interactive mode detected - defaulting to [C]ancel")
+            print("💡 Run script interactively to choose [O]verwrite or [B]ackup")
+            print()  # Extra space after
+            return False
+        
+        print()  # Extra space before warning
+        print(f"\033[1;31m⚠️ {self.output_iso} already exists\033[0m")  # Bold red warning
         while True:
             try:
                 choice = input("🤔 [O]verwrite, [B]ackup, [C]ancel? ").strip().upper()
+                print()  # Blank line after user choice
                 
                 if choice == 'O':
                     print(f"🔄 Will overwrite {self.output_iso}")
@@ -376,7 +388,7 @@ class ISOBuilder:
                 print("\n❌ Cancelled by user")
                 return False
             except EOFError:
-                print("\n❌ No input available")
+                print("\n❌ No input available - cancelling")
                 return False
     
     def create_iso(self, extract_dir, tool):
@@ -690,9 +702,9 @@ if __name__ == "__main__":
     BLUE_BOLD = '\033[1;34m'
     RESET = '\033[0m'
     
-    print(f"{BLUE_BOLD}INSTYAML ISO Builder v0.14.00{RESET}")
+    print(f"{BLUE_BOLD}INSTYAML ISO Builder v0.15.00{RESET}")
     print(f"{BLUE_BOLD}Building Ubuntu 24.04.2 with autoinstall YAML{RESET}")
-    print(f"{BLUE_BOLD}📅 Script Updated: 2025-07-07 21:00 UTC - GITHUB DOWNLOAD TIMING FIX{RESET}")
+    print(f"{BLUE_BOLD}📅 Script Updated: 2025-07-07 21:15 UTC - PIPED EXECUTION FIX{RESET}")
     print(f"{BLUE_BOLD}🔗 https://github.com/MachoDrone/instyaml{RESET}")
     print()  # Extra space for easy finding
     
