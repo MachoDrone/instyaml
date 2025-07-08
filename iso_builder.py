@@ -326,23 +326,15 @@ class ISOBuilder:
         return True
     
     def find_efi_image(self, extract_dir):
-        """Find the correct EFI boot image path"""
-        possible_paths = [
-            "boot/grub/efi.img",           # ✅ CORRECT - Ubuntu's actual EFI boot catalog
-            "boot/grub/i386-pc/eltorito.img",  # BIOS boot catalog for reference
-            "EFI/boot/grubx64.efi",        # This is an executable, not a boot catalog
-            "casper/vmlinuz",              # This is the kernel (incorrect)
-            "boot/grub/x86_64-efi/core.efi" # This is a GRUB module (incorrect)
-        ]
-        
-        for path in possible_paths:
-            full_path = os.path.join(extract_dir, path)
-            if os.path.exists(full_path):
-                print(f"✅ Found EFI image: {path}")
-                return path
-        
-        print("⚠️ No EFI image found, using legacy boot only")
-        return None
+        """Check for EFI boot executable (Ubuntu 24.04.2 uses direct EFI boot)"""
+        # Ubuntu 24.04.2 uses direct EFI executables, not El Torito EFI images
+        efi_executable = os.path.join(extract_dir, "EFI", "boot", "grubx64.efi")
+        if os.path.exists(efi_executable):
+            print(f"✅ Found EFI executable: EFI/boot/grubx64.efi")
+            return True
+        else:
+            print("⚠️ No EFI executable found - EFI boot will be disabled")
+            return False
     
     def handle_existing_iso(self):
         """Handle existing output ISO file"""
@@ -395,8 +387,8 @@ class ISOBuilder:
         
         print(f"💿 Creating new ISO: {self.output_iso}")
         
-        # Find EFI boot image
-        efi_image = self.find_efi_image(extract_dir)
+        # Check for EFI boot support (Ubuntu 24.04.2 uses direct EFI executables)
+        has_efi_support = self.find_efi_image(extract_dir)
         
         try:
             if self.is_windows:
@@ -408,18 +400,17 @@ class ISOBuilder:
                         "-J", "-joliet-long",
                         "-cache-inodes",  # Ubuntu parameter for efficiency
                         "-b", "boot/grub/i386-pc/eltorito.img",
-                        "-c", "boot/grub/boot.cat",  # Boot catalog location
+                        "-c", "boot.catalog",  # Boot catalog location (Ubuntu 24.04.2)
                         "-no-emul-boot",
                         "-boot-load-size", "4",
                         "-boot-info-table"
                     ]
                     
-                    # Add EFI boot if available (Ubuntu-compatible sequence)
-                    if efi_image:
+                    # Ubuntu 24.04.2 uses direct EFI executables - no El Torito EFI needed
+                    # EFI boot is handled automatically by the EFI/boot/grubx64.efi file
+                    # Just add GPT support for hybrid boot
+                    if has_efi_support:
                         cmd.extend([
-                            "-eltorito-alt-boot",
-                            "-e", efi_image,
-                            "-no-emul-boot",
                             "-isohybrid-gpt-basdat"
                         ])
                     
@@ -446,18 +437,17 @@ class ISOBuilder:
                         "-J", "-joliet-long",
                         "-cache-inodes",  # Ubuntu parameter for efficiency
                         "-b", "boot/grub/i386-pc/eltorito.img",
-                        "-c", "boot/grub/boot.cat",  # Boot catalog location
+                        "-c", "boot.catalog",  # Boot catalog location (Ubuntu 24.04.2)
                         "-no-emul-boot",
                         "-boot-load-size", "4",
                         "-boot-info-table"
                     ]
                     
-                    # Add EFI boot if available (Ubuntu-compatible sequence)
-                    if efi_image:
+                    # Ubuntu 24.04.2 uses direct EFI executables - no El Torito EFI needed
+                    # EFI boot is handled automatically by the EFI/boot/grubx64.efi file
+                    # Just add GPT support for hybrid boot
+                    if has_efi_support:
                         cmd.extend([
-                            "-eltorito-alt-boot",
-                            "-e", efi_image,
-                            "-no-emul-boot",
                             "-isohybrid-gpt-basdat"
                         ])
                     
@@ -469,24 +459,22 @@ class ISOBuilder:
                     ])
                     
                 else:
-                    # genisoimage or mkisofs
+                    # genisoimage or mkisofs (fallback - limited EFI support)
                     cmd = [
                         tool,
                         "-r", "-V", "Ubuntu 24.04.2 INSTYAML",
                         "-J", "-joliet-long",
                         "-b", "boot/grub/i386-pc/eltorito.img",
+                        "-c", "boot.catalog",  # Boot catalog location (Ubuntu 24.04.2)
                         "-no-emul-boot",
                         "-boot-load-size", "4",
                         "-boot-info-table"
                     ]
                     
-                    # Add EFI boot if available
-                    if efi_image:
-                        cmd.extend([
-                            "-eltorito-alt-boot",
-                            "-e", efi_image,
-                            "-no-emul-boot"
-                        ])
+                    # Note: genisoimage has limited EFI support compared to xorriso
+                    # EFI boot relies on direct EFI/boot/grubx64.efi executable
+                    if has_efi_support:
+                        print("⚠️ Using genisoimage - EFI boot support may be limited")
                     
                     cmd.extend(["-o", self.output_iso, extract_dir])
             
@@ -567,13 +555,13 @@ class ISOBuilder:
             else:
                 print(f"⚠️ Low file count: {file_count} files")
             
-            # Check 4: EFI boot support
-            efi_img_path = os.path.join(temp_mount, "boot", "grub", "efi.img")
-            if os.path.exists(efi_img_path):
-                efi_size = os.path.getsize(efi_img_path)
-                print(f"✅ EFI boot image found: boot/grub/efi.img ({efi_size} bytes)")
+            # Check 4: EFI boot support (Ubuntu 24.04.2 uses direct executables)
+            efi_exe_path = os.path.join(temp_mount, "EFI", "boot", "grubx64.efi")
+            if os.path.exists(efi_exe_path):
+                efi_size = os.path.getsize(efi_exe_path)
+                print(f"✅ EFI boot executable found: EFI/boot/grubx64.efi ({efi_size} bytes)")
             else:
-                print("⚠️ EFI boot image (boot/grub/efi.img) not found - EFI boot may fail")
+                print("⚠️ EFI boot executable (EFI/boot/grubx64.efi) not found - EFI boot may fail")
             
             # Check 5: ISO size
             iso_size_gb = os.path.getsize(self.output_iso) / (1024*1024*1024)
@@ -702,9 +690,9 @@ if __name__ == "__main__":
     BLUE_BOLD = '\033[1;34m'
     RESET = '\033[0m'
     
-    print(f"{BLUE_BOLD}INSTYAML ISO Builder v0.12.00{RESET}")
+    print(f"{BLUE_BOLD}INSTYAML ISO Builder v0.13.00{RESET}")
     print(f"{BLUE_BOLD}Building Ubuntu 24.04.2 with autoinstall YAML{RESET}")
-    print(f"{BLUE_BOLD}📅 Script Updated: 2025-07-07 20:15 UTC - EFI BOOT FIX{RESET}")
+    print(f"{BLUE_BOLD}📅 Script Updated: 2025-07-07 20:45 UTC - CORRECT EFI BOOT FIX{RESET}")
     print(f"{BLUE_BOLD}🔗 https://github.com/MachoDrone/instyaml{RESET}")
     print()  # Extra space for easy finding
     
