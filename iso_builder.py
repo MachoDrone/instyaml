@@ -617,6 +617,7 @@ class ISOBuilder:
                 subprocess.run(["chmod", "-R", "u+w", self.temp_dir], check=False)
                 shutil.rmtree(self.temp_dir)
                 print("🧹 Cleaned up temporary files, exited sudo")
+                print()  # Blank line after cleanup message
                 # Clear sudo credentials
                 if platform.system() == "Linux":
                     subprocess.run(["sudo", "-k"], check=False)
@@ -696,13 +697,24 @@ if __name__ == "__main__":
     RESET = '\033[0m'
     
     print()
-    print(f"{BLUE_BOLD}Building Ubuntu 24.04.2 with autoinstall YAML - v0.00.20{RESET}")
-    print("📅 Script Updated: 2025-01-08 14:30 UTC")
+    print()
+    # NOSANA ASCII art in bold green
+    DGREEN = '\033[0;32m'
+    NC = '\033[0m'
+    print(f"{DGREEN}               | \\ \\ \\  |{NC}")
+    print(f"{DGREEN}               |  \\ \\ \\ |{NC}")
+    print(f"{DGREEN}               | \\ \\ \\  |{NC}")
+    print(f"{DGREEN}               |  \\_\\ \\_|{NC}")
+    print()
+    print(f"  {DGREEN}N O S A N A{NC}")
+    print()
+    print("Building Ubuntu 24.04.2 with autoinstall YAML - v0.00.21")
+    print("📅 Script Updated: 2025-01-08 15:00 UTC")
     print()
     
     # Check for sudo access on Linux
     if platform.system() == "Linux":
-        print("� This script needs sudo access to mount ISO files.")
+        print("🔑 This script needs sudo access to mount ISO files.")
         try:
             subprocess.run(["sudo", "-v"], check=True)
         except subprocess.CalledProcessError:
