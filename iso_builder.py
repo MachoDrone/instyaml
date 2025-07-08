@@ -437,12 +437,14 @@ class ISOBuilder:
                         "-boot-info-table"
                     ]
                     
-                    # Ubuntu 24.04.2 uses direct EFI executables - no El Torito EFI needed
-                    # EFI boot is handled automatically by the EFI/boot/grubx64.efi file
-                    # Just add GPT support for hybrid boot
+                    # Ubuntu 24.04.2 uses direct EFI executables WITH El Torito EFI catalog
+                    # Need both the EFI executables AND the EFI boot catalog entry
                     if has_efi_support:
                         cmd.extend([
-                            "-isohybrid-gpt-basdat"
+                            "-eltorito-alt-boot",           # Start EFI boot catalog entry
+                            "-e", "EFI/boot/bootx64.efi",   # EFI boot image (primary EFI loader)
+                            "-no-emul-boot",                # No emulation for EFI
+                            "-isohybrid-gpt-basdat"         # GPT support for hybrid boot
                         ])
                     
                     # Add hybrid boot and partition support (Ubuntu parameters)
@@ -474,12 +476,14 @@ class ISOBuilder:
                         "-boot-info-table"
                     ]
                     
-                    # Ubuntu 24.04.2 uses direct EFI executables - no El Torito EFI needed
-                    # EFI boot is handled automatically by the EFI/boot/grubx64.efi file
-                    # Just add GPT support for hybrid boot
+                    # Ubuntu 24.04.2 uses direct EFI executables WITH El Torito EFI catalog
+                    # Need both the EFI executables AND the EFI boot catalog entry
                     if has_efi_support:
                         cmd.extend([
-                            "-isohybrid-gpt-basdat"
+                            "-eltorito-alt-boot",           # Start EFI boot catalog entry
+                            "-e", "EFI/boot/bootx64.efi",   # EFI boot image (primary EFI loader)
+                            "-no-emul-boot",                # No emulation for EFI
+                            "-isohybrid-gpt-basdat"         # GPT support for hybrid boot
                         ])
                     
                     # Add hybrid boot and partition support (Ubuntu parameters)
@@ -744,8 +748,8 @@ if __name__ == "__main__":
     print()
     print(f"               {DGREEN}N O S A N A{NC}")
     print()
-    print(f"{DGREEN}Building Ubuntu 24.04.2 with autoinstall YAML - v0.00.23{NC}")
-    print("📅 Script Updated: 2025-01-08 17:45 UTC")
+    print(f"{DGREEN}Building Ubuntu 24.04.2 with autoinstall YAML - v0.00.24{NC}")
+    print("📅 Script Updated: 2025-01-08 18:00 UTC")
     print()
     
     # Check for sudo access on Linux
