@@ -346,10 +346,14 @@ class ISOBuilder:
         if not sys.stdin.isatty():
             print()  # Extra space before warning
             print(f"\033[1;31m⚠️ {self.output_iso} already exists\033[0m")  # Bold red warning
-            print("🤔 Non-interactive mode detected - defaulting to [C]ancel")
-            print("💡 Run script interactively to choose [O]verwrite or [B]ackup")
+            print("🤔 Non-interactive mode detected - defaulting to [O]verwrite")
+            print("💡 Run script interactively to choose [B]ackup or [C]ancel options")
+            print("🔄 Will overwrite existing ISO in 3 seconds...")
+            import time
+            time.sleep(3)  # Brief pause for user awareness
+            print(f"🔄 Overwriting {self.output_iso}")
             print()  # Extra space after
-            return False
+            return True
         
         print()  # Extra space before warning
         print(f"\033[1;31m⚠️ {self.output_iso} already exists\033[0m")  # Bold red warning
@@ -702,9 +706,9 @@ if __name__ == "__main__":
     BLUE_BOLD = '\033[1;34m'
     RESET = '\033[0m'
     
-    print(f"{BLUE_BOLD}INSTYAML ISO Builder v0.15.00{RESET}")
+    print(f"{BLUE_BOLD}INSTYAML ISO Builder v0.16.00{RESET}")
     print(f"{BLUE_BOLD}Building Ubuntu 24.04.2 with autoinstall YAML{RESET}")
-    print(f"{BLUE_BOLD}📅 Script Updated: 2025-07-07 21:15 UTC - PIPED EXECUTION FIX{RESET}")
+    print(f"{BLUE_BOLD}📅 Script Updated: 2025-01-08 12:00 UTC - PIPED EXECUTION OVERWRITE FIX{RESET}")
     print(f"{BLUE_BOLD}🔗 https://github.com/MachoDrone/instyaml{RESET}")
     print()  # Extra space for easy finding
     
