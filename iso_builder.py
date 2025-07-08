@@ -344,6 +344,17 @@ class ISOBuilder:
         print(f"\033[1;31m⚠️ {self.output_iso} already exists\033[0m")  # Bold red warning
         while True:
             try:
+                # For piped execution, redirect input to terminal
+                import sys
+                if not sys.stdin.isatty():
+                    try:
+                        sys.stdin = open('/dev/tty', 'r')
+                    except (OSError, FileNotFoundError):
+                        # Fallback for systems without /dev/tty (like Windows)
+                        print("❌ Cannot get interactive input in piped mode")
+                        print("💡 Run: python3 iso_builder.py (after downloading)")
+                        return False
+                
                 choice = input("🤔 [O]verwrite, [B]ackup, [C]ancel? ").strip().upper()
                 print()  # Blank line after user choice
                 
@@ -691,8 +702,8 @@ if __name__ == "__main__":
     BLUE_BOLD = '\033[1;34m'
     RESET = '\033[0m'
     
-    print("Building Ubuntu 24.04.2 with autoinstall YAML - v0.17.00")
-    print("📅 Script Updated: 2025-01-08 13:00 UTC - CLEAN HEADER & MANUAL PROMPTS")
+    print("Building Ubuntu 24.04.2 with autoinstall YAML - v0.18.00")
+    print("📅 Script Updated: 2025-01-08 13:15 UTC - INTERACTIVE PIPED EXECUTION")
     print("🔗 https://github.com/MachoDrone/instyaml")
     print()
     
