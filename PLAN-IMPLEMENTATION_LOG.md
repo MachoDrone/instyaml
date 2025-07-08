@@ -778,4 +778,33 @@ print()  # Blank line after user choice
 
 ---
 
+### v0.16.00 - Piped Execution Overwrite Fix
+**Date:** 2025-01-08
+
+**Critical issue resolved:** v0.15.00 piped execution defaulted to cancel instead of overwrite, making primary use case non-functional.
+
+**User testing revealed:** 
+- wget piped execution consistently cancelled due to existing ISO files
+- No new ISOs being built, defeating purpose of automated building
+- Safe default behavior actually broke core functionality
+
+**Fix implemented:**
+- Non-interactive mode now defaults to overwrite with 3-second warning
+- Interactive mode preserves full [O]verwrite/[B]ackup/[C]ancel functionality  
+- Maintains file safety while enabling automated workflows
+
+**Code changes:**
+```python
+if not sys.stdin.isatty():
+    print("🤔 Non-interactive mode detected - defaulting to [O]verwrite")
+    print("💡 Run script interactively to choose [B]ackup or [C]ancel options")
+    print("🔄 Will overwrite existing ISO in 3 seconds...")
+    time.sleep(3)  # Brief user awareness pause
+    return True    # ← CRITICAL: Now returns True instead of False
+```
+
+**This completes the core INSTYAML functionality** - system now works reliably for both interactive and automated use cases.
+
+---
+
 *This project implementation log documents the complete development of the INSTYAML project from initial concept to successful working implementation.*
