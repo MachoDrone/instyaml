@@ -343,13 +343,15 @@ class ISOBuilder:
         
         # Check if we're in a piped/non-interactive environment
         import sys
+        import time
         if not sys.stdin.isatty():
             print()  # Extra space before warning
             print(f"\033[1;31m⚠️ {self.output_iso} already exists\033[0m")  # Bold red warning
-            print("🤔 Non-interactive mode detected - defaulting to [C]ancel")
-            print("💡 Run script interactively to choose [O]verwrite or [B]ackup")
-            print()  # Extra space after
-            return False
+            print("🤔 Non-interactive mode detected - defaulting to [O]verwrite")
+            print("💡 Run script interactively to choose [B]ackup or [C]ancel options")
+            print("🔄 Will overwrite existing ISO in 3 seconds...")
+            time.sleep(3)  # Brief pause for user awareness
+            return True    # Proceed with overwrite
         
         print()  # Extra space before warning
         print(f"\033[1;31m⚠️ {self.output_iso} already exists\033[0m")  # Bold red warning
