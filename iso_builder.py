@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """
-INSTYAML ISO Builder
+INSTYAML ISO Builder v0.16.00 - PIPED EXECUTION OVERWRITE FIX
 Downloads Ubuntu 24.04.2 ISO, adds autoinstall YAML, and creates bootable ISO
 Works on Windows and Linux
+
+v0.16.00 (2025-01-08): Fixed piped execution to default to overwrite instead of cancel
 """
 
 import os
@@ -63,6 +65,8 @@ def signal_handler(signum, frame):
     sys.exit(1)
 
 class ISOBuilder:
+    VERSION = "0.16.00"
+    
     def __init__(self):
         self.iso_url = "https://mirror.pilotfiber.com/ubuntu-iso/24.04.2/ubuntu-24.04.2-live-server-amd64.iso"
         self.iso_filename = "ubuntu-24.04.2-live-server-amd64.iso"
@@ -704,9 +708,9 @@ if __name__ == "__main__":
     BLUE_BOLD = '\033[1;34m'
     RESET = '\033[0m'
     
-    print(f"{BLUE_BOLD}INSTYAML ISO Builder v0.15.00{RESET}")
+    print(f"{BLUE_BOLD}INSTYAML ISO Builder v{ISOBuilder.VERSION}{RESET}")
     print(f"{BLUE_BOLD}Building Ubuntu 24.04.2 with autoinstall YAML{RESET}")
-    print(f"{BLUE_BOLD}📅 Script Updated: 2025-07-07 21:15 UTC - PIPED EXECUTION FIX{RESET}")
+    print(f"{BLUE_BOLD}📅 Script Updated: 2025-01-08 UTC - PIPED EXECUTION OVERWRITE FIX{RESET}")
     print(f"{BLUE_BOLD}🔗 https://github.com/MachoDrone/instyaml{RESET}")
     print()  # Extra space for easy finding
     
