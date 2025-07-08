@@ -17,13 +17,7 @@ import signal
 import atexit
 from pathlib import Path
 
-# Check for sudo access immediately on Linux
-if platform.system() == "Linux":
-    try:
-        subprocess.run(["sudo", "-v"], check=True)
-    except subprocess.CalledProcessError:
-        print("❌ Sudo access required for ISO mounting")
-        sys.exit(1)
+# Moved sudo check to after header display
 
 def install_python_dependencies():
     """Auto-install required Python packages"""
@@ -702,10 +696,19 @@ if __name__ == "__main__":
     BLUE_BOLD = '\033[1;34m'
     RESET = '\033[0m'
     
-    print("Building Ubuntu 24.04.2 with autoinstall YAML - v0.18.00")
-    print("📅 Script Updated: 2025-01-08 13:15 UTC - INTERACTIVE PIPED EXECUTION")
-    print("🔗 https://github.com/MachoDrone/instyaml")
+    print(f"{BLUE_BOLD}Building Ubuntu 24.04.2 with autoinstall YAML - v0.19.00{RESET}")
+    print("📅 Script Updated: 2025-01-08 13:30 UTC")
     print()
+    
+    # Check for sudo access on Linux
+    if platform.system() == "Linux":
+        print("� This script needs sudo access to mount ISO files.")
+        try:
+            subprocess.run(["sudo", "-v"], check=True)
+        except subprocess.CalledProcessError:
+            print("❌ Sudo access required for ISO mounting")
+            sys.exit(1)
+        print()  # Extra space after sudo section
     
     # First, ensure Python dependencies are installed
     if not install_python_dependencies():
