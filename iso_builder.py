@@ -477,13 +477,14 @@ class ISOBuilder:
                     ]
                     
                     # Ubuntu 24.04.2 uses direct EFI executables WITH El Torito EFI catalog
-                    # Need both the EFI executables AND the EFI boot catalog entry
+                    # Need both the EFI executables AND proper GPT partition table
                     if has_efi_support:
                         cmd.extend([
                             "-eltorito-alt-boot",           # Start EFI boot catalog entry
                             "-e", "EFI/boot/bootx64.efi",   # EFI boot image (primary EFI loader)
                             "-no-emul-boot",                # No emulation for EFI
-                            "-isohybrid-gpt-basdat"         # GPT support for hybrid boot
+                            "-isohybrid-gpt-basdat",        # Create GPT partition table
+                            "-isohybrid-apm-hfsplus"        # Additional hybrid boot support
                         ])
                     
                     # Add hybrid boot and partition support (Ubuntu parameters)
@@ -748,8 +749,8 @@ if __name__ == "__main__":
     print()
     print(f"               {DGREEN}N O S A N A{NC}")
     print()
-    print(f"{DGREEN}Building Ubuntu 24.04.2 with autoinstall YAML - v0.00.24{NC}")
-    print("📅 Script Updated: 2025-01-08 18:00 UTC")
+    print(f"{DGREEN}Building Ubuntu 24.04.2 with autoinstall YAML - v0.00.25{NC}")
+    print("📅 Script Updated: 2025-01-08 18:15 UTC")
     print()
     
     # Check for sudo access on Linux
