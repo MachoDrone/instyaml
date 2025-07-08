@@ -4,12 +4,13 @@ INSTYAML ISO Builder
 Downloads Ubuntu 24.04.2 ISO, adds autoinstall YAML, and creates bootable ISO
 Works on Windows and Linux
 
-v0.00.27 (2025-01-09): Advanced EFI Boot Fix - Ubuntu-Compatible GPT Implementation
+v0.00.28 (2025-01-09): EFI Boot Fix + xorriso Compatibility Improvements  
 - CRITICAL FIX: Proper GPT partition table creation for UEFI firmware compatibility
 - Smart EFI boot detection: Prefers Ubuntu's efi.img, falls back to bootx64.efi
-- Dynamic hybrid MBR path detection with multiple fallback locations
-- Enhanced error handling and debugging for EFI boot troubleshooting
-- Ubuntu-exact parameter ordering and partition configuration
+- FIXED: xorriso cylinder parameter limit (1024 -> 255 max allowed)
+- FIXED: Missing syslinux dependency auto-installation
+- Enhanced error handling for missing isohdpfx.bin
+- Dynamic hybrid MBR path detection with graceful fallback
 - Cross-platform Windows/Linux EFI support improvements
 """
 
@@ -139,11 +140,11 @@ class ISOBuilder:
                 print(f"✅ {tool} already installed")
                 return tool
         
-        # Try to install xorriso and genisoimage
-        print("📦 Installing xorriso and genisoimage...")
+        # Try to install xorriso, genisoimage, and syslinux-common for EFI support
+        print("📦 Installing xorriso, genisoimage, and syslinux-common...")
         try:
             subprocess.check_call(["sudo", "apt", "update"])
-            subprocess.check_call(["sudo", "apt", "install", "-y", "xorriso", "genisoimage"])
+            subprocess.check_call(["sudo", "apt", "install", "-y", "xorriso", "genisoimage", "syslinux-common"])
             
             # Check what got installed
             for tool in tools:
@@ -157,7 +158,7 @@ class ISOBuilder:
         except subprocess.CalledProcessError as e:
             print(f"❌ Failed to install dependencies: {e}")
             print("Please install manually:")
-            print("sudo apt install xorriso genisoimage")
+            print("sudo apt install xorriso genisoimage syslinux-common")
             return None
     
     def check_dependencies(self):
@@ -561,12 +562,14 @@ class ISOBuilder:
                                 "-isohybrid-mbr", isohdpfx_bin
                             ])
                         else:
-                            print("⚠️ Warning: isohdpfx.bin not found - install syslinux package")
+                            print("⚠️ Warning: isohdpfx.bin not found - skipping hybrid MBR")
+                            print("💡 For optimal compatibility: sudo apt install syslinux-common")
                         
                         # Add Ubuntu-compatible partition parameters for hybrid boot
+                        # Note: xorriso limits partition_hd_cyl to 255 max
                         cmd.extend([
                             "-partition_offset", "16",
-                            "-partition_hd_cyl", "1024", 
+                            "-partition_hd_cyl", "255",     # Max allowed by xorriso
                             "-partition_sec_hd", "32",
                             "-partition_cyl_align", "off"
                         ])
@@ -841,8 +844,8 @@ if __name__ == "__main__":
     print()
     print(f"               {DGREEN}N O S A N A{NC}")
     print()
-    print(f"{DGREEN}Building Ubuntu 24.04.2 with autoinstall YAML - v0.00.27{NC}")
-    print("📅 Script Updated: 2025-01-09 14:30 UTC - EFI Boot Fix")
+    print(f"{DGREEN}Building Ubuntu 24.04.2 with autoinstall YAML - v0.00.28{NC}")
+    print("📅 Script Updated: 2025-01-09 15:00 UTC - EFI Boot Fix + xorriso Compatibility")
     print()
     
     # Check for sudo access on Linux
