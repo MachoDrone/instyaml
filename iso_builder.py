@@ -690,9 +690,9 @@ if __name__ == "__main__":
     BLUE_BOLD = '\033[1;34m'
     RESET = '\033[0m'
     
-    print(f"{BLUE_BOLD}INSTYAML ISO Builder v0.13.00{RESET}")
+    print(f"{BLUE_BOLD}INSTYAML ISO Builder v0.14.00{RESET}")
     print(f"{BLUE_BOLD}Building Ubuntu 24.04.2 with autoinstall YAML{RESET}")
-    print(f"{BLUE_BOLD}📅 Script Updated: 2025-07-07 20:45 UTC - CORRECT EFI BOOT FIX{RESET}")
+    print(f"{BLUE_BOLD}📅 Script Updated: 2025-07-07 21:00 UTC - GITHUB DOWNLOAD TIMING FIX{RESET}")
     print(f"{BLUE_BOLD}🔗 https://github.com/MachoDrone/instyaml{RESET}")
     print()  # Extra space for easy finding
     

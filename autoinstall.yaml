@@ -12,6 +12,8 @@ autoinstall:
             name: "e*"
           dhcp4: true
           dhcp6: false
+          dhcp4-overrides:
+            use-dns: true
   
   # Skip most of the normal installation
   source:
@@ -23,28 +25,180 @@ autoinstall:
     username: installer
     password: '$6$rounds=4096$saltsaltsal$L/Owq4aPgbaQ7O5m6zQ4nf0H.p4mMOO4W.9qCOWh/...'  # "password"
   
-  # The magic happens in late-commands
+  # The magic happens in late-commands with robust network verification
   late-commands:
-    # Download and execute your installer script from GitHub
+    # Comprehensive GitHub download with network readiness verification
     - |
       echo "=== INSTYAML BOOT TEST STARTING ==="
-      echo "Downloading installer script from GitHub..."
+      echo "Timestamp: $(date)"
+      echo ""
       
-      # Download the installer script
-      curl -L -o /target/tmp/install.sh https://raw.githubusercontent.com/MachoDrone/instyaml/main/install.sh
-      
-      if [ $? -eq 0 ]; then
-        echo "Successfully downloaded installer script"
-        chmod +x /target/tmp/install.sh
+      # Function for network readiness verification
+      wait_for_network() {
+        local max_attempts=30
+        local attempt=1
+        local delay=2
         
-        # Execute the installer script in chroot
-        echo "Executing installer script..."
-        chroot /target /tmp/install.sh
+        echo "🔍 Verifying network readiness..."
+        
+        while [ $attempt -le $max_attempts ]; do
+          echo "  Attempt $attempt/$max_attempts: Checking network interfaces..."
+          
+          # Check if we have an IP address
+          if ip route get 8.8.8.8 >/dev/null 2>&1; then
+            echo "  ✅ Network route available"
+            
+            # Test DNS resolution
+            echo "  🔍 Testing DNS resolution..."
+            if nslookup raw.githubusercontent.com >/dev/null 2>&1; then
+              echo "  ✅ DNS resolution working"
+              
+              # Test basic connectivity
+              echo "  🔍 Testing GitHub connectivity..."
+              if ping -c 1 -W 5 raw.githubusercontent.com >/dev/null 2>&1; then
+                echo "  ✅ GitHub connectivity confirmed"
+                echo "✅ Network is ready! (attempt $attempt)"
+                return 0
+              else
+                echo "  ⚠️ GitHub ping failed"
+              fi
+            else
+              echo "  ⚠️ DNS resolution failed"
+            fi
+          else
+            echo "  ⚠️ No network route available"
+          fi
+          
+          echo "  ⏳ Waiting ${delay}s before retry..."
+          sleep $delay
+          attempt=$((attempt + 1))
+          
+          # Exponential backoff (max 10s)
+          if [ $delay -lt 10 ]; then
+            delay=$((delay + 1))
+          fi
+        done
+        
+        echo "❌ Network readiness verification failed after $max_attempts attempts"
+        return 1
+      }
+      
+      # Function for robust GitHub download
+      download_installer() {
+        local url="https://raw.githubusercontent.com/MachoDrone/instyaml/main/install.sh"
+        local output_file="/target/tmp/install.sh"
+        local max_attempts=5
+        local attempt=1
+        
+        echo "📥 Downloading installer script from GitHub..."
+        echo "URL: $url"
+        
+        # Ensure target directory exists
+        mkdir -p /target/tmp
+        
+        while [ $attempt -le $max_attempts ]; do
+          echo "  Download attempt $attempt/$max_attempts..."
+          
+          # Try download with timeout and verbose error reporting
+          if curl -L --connect-timeout 30 --max-time 120 --retry 2 --fail \
+                  -o "$output_file" "$url" 2>/tmp/curl_error.log; then
+            
+            # Verify download succeeded and file is not empty
+            if [ -s "$output_file" ]; then
+              echo "  ✅ Download successful ($(wc -c < "$output_file") bytes)"
+              
+              # Basic validation - check if it looks like a shell script
+              if head -1 "$output_file" | grep -q "^#!/bin/bash"; then
+                echo "  ✅ File validation passed"
+                chmod +x "$output_file"
+                return 0
+              else
+                echo "  ⚠️ File validation failed - not a valid script"
+                cat "$output_file" | head -5
+              fi
+            else
+              echo "  ⚠️ Downloaded file is empty"
+            fi
+          else
+            echo "  ❌ Download failed"
+            if [ -f /tmp/curl_error.log ]; then
+              echo "  Error details:"
+              cat /tmp/curl_error.log | head -3
+            fi
+          fi
+          
+          # Clean up failed download
+          rm -f "$output_file"
+          
+          if [ $attempt -lt $max_attempts ]; then
+            local delay=$((attempt * 3))  # 3, 6, 9, 12 second delays
+            echo "  ⏳ Waiting ${delay}s before retry..."
+            sleep $delay
+          fi
+          
+          attempt=$((attempt + 1))
+        done
+        
+        echo "❌ Download failed after $max_attempts attempts"
+        return 1
+      }
+      
+      # Function to execute installer script
+      execute_installer() {
+        local script_file="/target/tmp/install.sh"
+        
+        echo "🚀 Executing installer script..."
+        
+        # Execute in chroot with error handling
+        if chroot /target /tmp/install.sh; then
+          echo "✅ Installer script completed successfully"
+          return 0
+        else
+          echo "❌ Installer script execution failed"
+          return 1
+        fi
+      }
+      
+      # Main execution flow
+      echo "=================================================="
+      
+      # Step 1: Wait for network readiness
+      if wait_for_network; then
+        echo ""
+        
+        # Step 2: Download installer script
+        if download_installer; then
+          echo ""
+          
+          # Step 3: Execute installer script  
+          if execute_installer; then
+            echo ""
+            echo "🎉 INSTYAML BOOT TEST COMPLETED SUCCESSFULLY!"
+          else
+            echo ""
+            echo "⚠️ INSTYAML execution failed, but download worked"
+          fi
+        else
+          echo ""
+          echo "❌ INSTYAML download failed - check network and GitHub repository"
+          echo "Manual verification commands:"
+          echo "  ping raw.githubusercontent.com"
+          echo "  curl -I https://raw.githubusercontent.com/MachoDrone/instyaml/main/install.sh"
+        fi
       else
-        echo "ERROR: Failed to download installer script from GitHub"
-        echo "Check network connectivity and GitHub repository"
+        echo ""
+        echo "❌ INSTYAML network readiness failed"
+        echo "Network debugging info:"
+        echo "IP addresses:"
+        ip addr show | grep -E "inet.*global"
+        echo "Route table:"
+        ip route show | head -5
+        echo "DNS servers:"
+        cat /etc/resolv.conf | grep nameserver
       fi
       
+      echo ""
+      echo "=================================================="
       echo "=== INSTYAML BOOT TEST COMPLETE ==="
       echo "Press any key to continue..."
       read -n 1

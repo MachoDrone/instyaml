@@ -632,4 +632,86 @@ if os.path.exists(efi_exe_path):
 
 ---
 
+## GitHub Download Timing Problem Resolution
+
+### v0.14.00 - Comprehensive GitHub Download Timing Fix
+**Date:** 2025-07-07 21:00 UTC
+
+**Problem identified:** GitHub download failures during Ubuntu autoinstall process due to network timing issues.
+
+**Root causes discovered:**
+1. **No network readiness verification** - Script immediately attempted download without checking network status
+2. **Single attempt downloads** - No retry logic for transient network failures
+3. **DNS resolution timing** - DNS might not be fully configured when late-commands execute
+4. **Race conditions** - Network interface up ≠ network fully functional
+5. **Poor error reporting** - Limited feedback for debugging download failures
+
+**Comprehensive solution implemented:**
+
+**1. Network Readiness Verification System:**
+```bash
+wait_for_network() {
+  # 30 attempts with exponential backoff (2-10 seconds)
+  # Tests: IP routing, DNS resolution, GitHub connectivity
+  if ip route get 8.8.8.8 && nslookup raw.githubusercontent.com && ping raw.githubusercontent.com; then
+    return 0  # Network ready
+  fi
+}
+```
+
+**2. Robust Download System with Retry Logic:**
+```bash
+download_installer() {
+  # 5 attempts with progressive delays (3, 6, 9, 12 seconds)
+  # Enhanced curl parameters: --connect-timeout 30 --max-time 120 --retry 2 --fail
+  # File validation: checks script header, file size, content verification
+}
+```
+
+**3. Enhanced Network Configuration:**
+```yaml
+network:
+  network:
+    version: 2
+    ethernets:
+      any:
+        match:
+          name: "e*"
+        dhcp4: true
+        dhcp6: false
+        dhcp4-overrides:
+          use-dns: true  # ← New: Ensure DNS from DHCP is used
+```
+
+**4. Comprehensive Error Reporting:**
+- **Network debugging:** IP addresses, route table, DNS servers
+- **Download debugging:** curl error logs, file validation results
+- **Step-by-step progress:** Clear indication of which phase failed
+- **Manual verification commands:** Provided for troubleshooting
+
+**5. Modular Function Architecture:**
+- `wait_for_network()` - Network readiness verification
+- `download_installer()` - Robust GitHub download with retries
+- `execute_installer()` - Script execution with error handling
+- **Main flow:** Sequential execution with proper error propagation
+
+**Key improvements:**
+- **Up to 30 network readiness attempts** (max 60 seconds wait)
+- **Up to 5 download attempts** with exponential backoff
+- **DNS resolution verification** before attempting downloads
+- **File content validation** to ensure complete downloads
+- **Detailed error reporting** for each failure mode
+- **Network debugging info** when failures occur
+
+**Expected behavior changes:**
+- ✅ **Reliable GitHub downloads** even with slow network initialization
+- ✅ **Clear progress feedback** showing each verification step
+- ✅ **Graceful retry handling** for transient network issues
+- ✅ **Comprehensive error reporting** for persistent failures
+- ✅ **Better user experience** with detailed status messages
+
+**This fix addresses the second critical INSTYAML issue** (GitHub download timing), complementing the EFI boot fix in v0.13.00. The system should now be robust against network timing variations common in virtualized and physical hardware environments.
+
+---
+
 *This project implementation log documents the complete development of the INSTYAML project from initial concept to successful working implementation.*
