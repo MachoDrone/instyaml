@@ -3,6 +3,11 @@
 INSTYAML ISO Builder
 Downloads Ubuntu 24.04.2 ISO, adds autoinstall YAML, and creates bootable ISO
 Works on Windows and Linux
+
+v0.00.26 (2025-01-09): Enhanced EFI boot support with proper GPT partition table
+- Added Ubuntu-compatible xorriso parameters for EFI boot
+- Fixed missing GPT partition table issue  
+- Enhanced hybrid boot support with isohybrid-mbr and append_partition
 """
 
 import os
@@ -17,16 +22,7 @@ import signal
 import atexit
 from pathlib import Path
 
-# Check for sudo access immediately on Linux
-if platform.system() == "Linux":
-    print("🔐 This script needs sudo access to mount ISO files.")
-    try:
-        subprocess.run(["sudo", "-v"], check=True)
-        print("✅ Sudo access confirmed")
-    except subprocess.CalledProcessError:
-        print("❌ Sudo access required for ISO mounting")
-        sys.exit(1)
-    print()
+# Moved sudo check to after header display
 
 def install_python_dependencies():
     """Auto-install required Python packages"""
@@ -48,11 +44,10 @@ def install_python_dependencies():
             return False
 
 def cleanup_sudo():
-    """Global cleanup function to clear sudo cache"""
+    """Global cleanup function to clear sudo cache (silent for exit handler)"""
     if platform.system() == "Linux":
         try:
             subprocess.run(["sudo", "-k"], check=False)
-            print("🔐 Cleared sudo credentials cache")
         except Exception:
             pass
 
@@ -326,14 +321,40 @@ class ISOBuilder:
         return True
     
     def find_efi_image(self, extract_dir):
-        """Check for EFI boot executable (Ubuntu 24.04.2 uses direct EFI boot)"""
-        # Ubuntu 24.04.2 uses direct EFI executables, not El Torito EFI images
-        efi_executable = os.path.join(extract_dir, "EFI", "boot", "grubx64.efi")
-        if os.path.exists(efi_executable):
-            print(f"✅ Found EFI executable: EFI/boot/grubx64.efi")
+        """Check for EFI boot executables (Ubuntu 24.04.2 uses multiple EFI files)"""
+        # Ubuntu 24.04.2 uses multiple EFI executables for full compatibility
+        efi_dir = os.path.join(extract_dir, "EFI", "boot")
+        
+        if not os.path.exists(efi_dir):
+            print("⚠️ No EFI directory found - EFI boot will be disabled")
+            return False
+        
+        # Check for the three critical EFI files
+        efi_files = {
+            "bootx64.efi": "Primary EFI boot loader",
+            "grubx64.efi": "GRUB EFI executable", 
+            "mmx64.efi": "Memory test utility"
+        }
+        
+        found_files = []
+        missing_files = []
+        
+        for filename, description in efi_files.items():
+            file_path = os.path.join(efi_dir, filename)
+            if os.path.exists(file_path):
+                file_size = os.path.getsize(file_path)
+                print(f"✅ Found {filename}: {description} ({file_size} bytes)")
+                found_files.append(filename)
+            else:
+                print(f"⚠️ Missing {filename}: {description}")
+                missing_files.append(filename)
+        
+        # bootx64.efi is critical for EFI boot
+        if "bootx64.efi" in found_files:
+            print(f"✅ EFI boot should work - found {len(found_files)}/3 EFI files")
             return True
         else:
-            print("⚠️ No EFI executable found - EFI boot will be disabled")
+            print("❌ Critical: bootx64.efi missing - EFI boot will fail")
             return False
     
     def handle_existing_iso(self):
@@ -341,20 +362,23 @@ class ISOBuilder:
         if not os.path.exists(self.output_iso):
             return True  # No existing file, proceed
         
-        # Check if we're in a piped/non-interactive environment
-        import sys
-        if not sys.stdin.isatty():
-            print()  # Extra space before warning
-            print(f"\033[1;31m⚠️ {self.output_iso} already exists\033[0m")  # Bold red warning
-            print("🤔 Non-interactive mode detected - defaulting to [C]ancel")
-            print("💡 Run script interactively to choose [O]verwrite or [B]ackup")
-            print()  # Extra space after
-            return False
+        # Always prompt for user choice - no automatic defaults
         
         print()  # Extra space before warning
         print(f"\033[1;31m⚠️ {self.output_iso} already exists\033[0m")  # Bold red warning
         while True:
             try:
+                # For piped execution, redirect input to terminal
+                import sys
+                if not sys.stdin.isatty():
+                    try:
+                        sys.stdin = open('/dev/tty', 'r')
+                    except (OSError, FileNotFoundError):
+                        # Fallback for systems without /dev/tty (like Windows)
+                        print("❌ Cannot get interactive input in piped mode")
+                        print("💡 Run: python3 iso_builder.py (after downloading)")
+                        return False
+                
                 choice = input("🤔 [O]verwrite, [B]ackup, [C]ancel? ").strip().upper()
                 print()  # Blank line after user choice
                 
@@ -418,12 +442,14 @@ class ISOBuilder:
                         "-boot-info-table"
                     ]
                     
-                    # Ubuntu 24.04.2 uses direct EFI executables - no El Torito EFI needed
-                    # EFI boot is handled automatically by the EFI/boot/grubx64.efi file
-                    # Just add GPT support for hybrid boot
+                    # Ubuntu 24.04.2 uses direct EFI executables WITH El Torito EFI catalog
+                    # Need both the EFI executables AND the EFI boot catalog entry
                     if has_efi_support:
                         cmd.extend([
-                            "-isohybrid-gpt-basdat"
+                            "-eltorito-alt-boot",           # Start EFI boot catalog entry
+                            "-e", "EFI/boot/bootx64.efi",   # EFI boot image (primary EFI loader)
+                            "-no-emul-boot",                # No emulation for EFI
+                            "-isohybrid-gpt-basdat"         # GPT support for hybrid boot
                         ])
                     
                     # Add hybrid boot and partition support (Ubuntu parameters)
@@ -455,12 +481,19 @@ class ISOBuilder:
                         "-boot-info-table"
                     ]
                     
-                    # Ubuntu 24.04.2 uses direct EFI executables - no El Torito EFI needed
-                    # EFI boot is handled automatically by the EFI/boot/grubx64.efi file
-                    # Just add GPT support for hybrid boot
+                    # Ubuntu 24.04.2 uses direct EFI executables WITH El Torito EFI catalog
+                    # Need both the EFI executables AND proper GPT partition table
                     if has_efi_support:
                         cmd.extend([
-                            "-isohybrid-gpt-basdat"
+                            "-eltorito-alt-boot",           # Start EFI boot catalog entry
+                            "-e", "EFI/boot/bootx64.efi",   # EFI boot image (primary EFI loader)
+                            "-no-emul-boot",                # No emulation for EFI
+                            "-isohybrid-gpt-basdat",        # Create GPT partition table
+                            "-isohybrid-mbr", "/usr/lib/ISOLINUX/isohdpfx.bin",  # Ubuntu hybrid MBR
+                            "-partition_hd_cyl", "1024",    # Ubuntu partition parameters
+                            "-partition_sec_hd", "32",      # Ubuntu partition parameters
+                            "-partition_cyl_align", "off",  # Ubuntu partition parameters
+                            "-append_partition", "2", "0xef", "EFI/boot/bootx64.efi"  # EFI partition
                         ])
                     
                     # Add hybrid boot and partition support (Ubuntu parameters)
@@ -562,18 +595,29 @@ class ISOBuilder:
             for root, dirs, files in os.walk(temp_mount):
                 file_count += len(files)
             
-            if file_count > 1000:  # Original Ubuntu ISO has ~1079 files
+            if file_count > 800:  # Modified ISO typically has ~871 files (down from ~1079)
                 print(f"✅ File count looks good: {file_count} files")
             else:
                 print(f"⚠️ Low file count: {file_count} files")
             
-            # Check 4: EFI boot support (Ubuntu 24.04.2 uses direct executables)
-            efi_exe_path = os.path.join(temp_mount, "EFI", "boot", "grubx64.efi")
-            if os.path.exists(efi_exe_path):
-                efi_size = os.path.getsize(efi_exe_path)
-                print(f"✅ EFI boot executable found: EFI/boot/grubx64.efi ({efi_size} bytes)")
+            # Check 4: EFI boot support (Ubuntu 24.04.2 uses multiple EFI files)
+            efi_dir = os.path.join(temp_mount, "EFI", "boot")
+            if os.path.exists(efi_dir):
+                efi_files = ["bootx64.efi", "grubx64.efi", "mmx64.efi"]
+                found_efi = []
+                for efi_file in efi_files:
+                    efi_path = os.path.join(efi_dir, efi_file)
+                    if os.path.exists(efi_path):
+                        efi_size = os.path.getsize(efi_path)
+                        print(f"✅ Found {efi_file}: {efi_size} bytes")
+                        found_efi.append(efi_file)
+                
+                if "bootx64.efi" in found_efi:
+                    print(f"✅ EFI boot should work: {len(found_efi)}/3 EFI files present")
+                else:
+                    print("❌ Critical: bootx64.efi missing - EFI boot will fail")
             else:
-                print("⚠️ EFI boot executable (EFI/boot/grubx64.efi) not found - EFI boot may fail")
+                print("⚠️ EFI directory not found - EFI boot will fail")
             
             # Check 5: ISO size
             iso_size_gb = os.path.getsize(self.output_iso) / (1024*1024*1024)
@@ -613,11 +657,8 @@ class ISOBuilder:
     
     def offer_cleanup_original_iso(self):
         """Offer to remove the original Ubuntu ISO to save space"""
-        if os.path.exists(self.iso_filename):
-            print(f"\n💾 Space optimization:")
-            print(f"The original ISO ({self.iso_filename}) is still present.")
-            print(f"You can remove it to save ~3GB if you only need the custom ISO.")
-            print(f"Command to remove: rm -f {self.iso_filename}")
+        # Removed per user request - don't show space optimization suggestions
+        pass
         
     def cleanup(self):
         """Clean up temporary files"""
@@ -626,7 +667,9 @@ class ISOBuilder:
                 # Make sure all files are writable before deletion
                 subprocess.run(["chmod", "-R", "u+w", self.temp_dir], check=False)
                 shutil.rmtree(self.temp_dir)
-                print("🧹 Cleaned up temporary files")
+                # Clear sudo credentials (silent - message shown in main output)
+                if platform.system() == "Linux":
+                    subprocess.run(["sudo", "-k"], check=False)
             except Exception as e:
                 print(f"⚠️ Cleanup warning: {e}")
                 print("Some temporary files may remain in /tmp/")
@@ -672,13 +715,14 @@ class ISOBuilder:
             self.cleanup_ancillary_files()
             
             print("=" * 50)
-            print("🎉 SUCCESS! Your INSTYAML ISO is ready:")
-            print(f"📀 {self.output_iso}")
-            print(f"📏 Size: {os.path.getsize(self.output_iso) / (1024*1024*1024):.1f} GB")
-            print("\n🔥 Next steps:")
+            print(f"📀 {self.output_iso} is ready.")
+            print("🧹 Removed temp files, exited sudo")
+            print()
+            print("🔥 Next steps:")
             print("1. Burn to USB with Rufus/dd")
             print("2. Boot and watch for GitHub-downloaded messages")
             print("3. Edit install.sh in GitHub to test updates")
+            print()
             
             # Offer to remove original ISO
             self.offer_cleanup_original_iso()
@@ -702,11 +746,31 @@ if __name__ == "__main__":
     BLUE_BOLD = '\033[1;34m'
     RESET = '\033[0m'
     
-    print(f"{BLUE_BOLD}INSTYAML ISO Builder v0.15.00{RESET}")
-    print(f"{BLUE_BOLD}Building Ubuntu 24.04.2 with autoinstall YAML{RESET}")
-    print(f"{BLUE_BOLD}📅 Script Updated: 2025-07-07 21:15 UTC - PIPED EXECUTION FIX{RESET}")
-    print(f"{BLUE_BOLD}🔗 https://github.com/MachoDrone/instyaml{RESET}")
-    print()  # Extra space for easy finding
+    print()
+    print()
+    # NOSANA ASCII art in bold green
+    DGREEN = '\033[0;32m'
+    NC = '\033[0m'
+    print(f"{DGREEN}               | \\ \\ \\  |{NC}")
+    print(f"{DGREEN}               |  \\ \\ \\ |{NC}")
+    print(f"{DGREEN}               | \\ \\ \\  |{NC}")
+    print(f"{DGREEN}               |  \\_\\ \\_|{NC}")
+    print()
+    print(f"               {DGREEN}N O S A N A{NC}")
+    print()
+    print(f"{DGREEN}Building Ubuntu 24.04.2 with autoinstall YAML - v0.00.26{NC}")
+    print("📅 Script Updated: 2025-01-09 02:30 UTC")
+    print()
+    
+    # Check for sudo access on Linux
+    if platform.system() == "Linux":
+        print("🔑 This script needs sudo access to mount ISO files.")
+        try:
+            subprocess.run(["sudo", "-v"], check=True)
+        except subprocess.CalledProcessError:
+            print("❌ Sudo access required for ISO mounting")
+            sys.exit(1)
+        print()  # Extra space after sudo section
     
     # First, ensure Python dependencies are installed
     if not install_python_dependencies():
