@@ -3,6 +3,11 @@
 INSTYAML ISO Builder
 Downloads Ubuntu 24.04.2 ISO, adds autoinstall YAML, and creates bootable ISO
 Works on Windows and Linux
+
+v0.00.26 (2025-01-09): Enhanced EFI boot support with proper GPT partition table
+- Added Ubuntu-compatible xorriso parameters for EFI boot
+- Fixed missing GPT partition table issue  
+- Enhanced hybrid boot support with isohybrid-mbr and append_partition
 """
 
 import os
@@ -484,7 +489,11 @@ class ISOBuilder:
                             "-e", "EFI/boot/bootx64.efi",   # EFI boot image (primary EFI loader)
                             "-no-emul-boot",                # No emulation for EFI
                             "-isohybrid-gpt-basdat",        # Create GPT partition table
-                            "-isohybrid-apm-hfsplus"        # Additional hybrid boot support
+                            "-isohybrid-mbr", "/usr/lib/ISOLINUX/isohdpfx.bin",  # Ubuntu hybrid MBR
+                            "-partition_hd_cyl", "1024",    # Ubuntu partition parameters
+                            "-partition_sec_hd", "32",      # Ubuntu partition parameters
+                            "-partition_cyl_align", "off",  # Ubuntu partition parameters
+                            "-append_partition", "2", "0xef", "EFI/boot/bootx64.efi"  # EFI partition
                         ])
                     
                     # Add hybrid boot and partition support (Ubuntu parameters)
@@ -749,8 +758,8 @@ if __name__ == "__main__":
     print()
     print(f"               {DGREEN}N O S A N A{NC}")
     print()
-    print(f"{DGREEN}Building Ubuntu 24.04.2 with autoinstall YAML - v0.00.25{NC}")
-    print("📅 Script Updated: 2025-01-08 18:15 UTC")
+    print(f"{DGREEN}Building Ubuntu 24.04.2 with autoinstall YAML - v0.00.26{NC}")
+    print("📅 Script Updated: 2025-01-09 02:30 UTC")
     print()
     
     # Check for sudo access on Linux
