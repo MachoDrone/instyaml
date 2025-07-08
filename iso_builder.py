@@ -316,14 +316,40 @@ class ISOBuilder:
         return True
     
     def find_efi_image(self, extract_dir):
-        """Check for EFI boot executable (Ubuntu 24.04.2 uses direct EFI boot)"""
-        # Ubuntu 24.04.2 uses direct EFI executables, not El Torito EFI images
-        efi_executable = os.path.join(extract_dir, "EFI", "boot", "grubx64.efi")
-        if os.path.exists(efi_executable):
-            print(f"✅ Found EFI executable: EFI/boot/grubx64.efi")
+        """Check for EFI boot executables (Ubuntu 24.04.2 uses multiple EFI files)"""
+        # Ubuntu 24.04.2 uses multiple EFI executables for full compatibility
+        efi_dir = os.path.join(extract_dir, "EFI", "boot")
+        
+        if not os.path.exists(efi_dir):
+            print("⚠️ No EFI directory found - EFI boot will be disabled")
+            return False
+        
+        # Check for the three critical EFI files
+        efi_files = {
+            "bootx64.efi": "Primary EFI boot loader",
+            "grubx64.efi": "GRUB EFI executable", 
+            "mmx64.efi": "Memory test utility"
+        }
+        
+        found_files = []
+        missing_files = []
+        
+        for filename, description in efi_files.items():
+            file_path = os.path.join(efi_dir, filename)
+            if os.path.exists(file_path):
+                file_size = os.path.getsize(file_path)
+                print(f"✅ Found {filename}: {description} ({file_size} bytes)")
+                found_files.append(filename)
+            else:
+                print(f"⚠️ Missing {filename}: {description}")
+                missing_files.append(filename)
+        
+        # bootx64.efi is critical for EFI boot
+        if "bootx64.efi" in found_files:
+            print(f"✅ EFI boot should work - found {len(found_files)}/3 EFI files")
             return True
         else:
-            print("⚠️ No EFI executable found - EFI boot will be disabled")
+            print("❌ Critical: bootx64.efi missing - EFI boot will fail")
             return False
     
     def handle_existing_iso(self):
@@ -560,13 +586,24 @@ class ISOBuilder:
             else:
                 print(f"⚠️ Low file count: {file_count} files")
             
-            # Check 4: EFI boot support (Ubuntu 24.04.2 uses direct executables)
-            efi_exe_path = os.path.join(temp_mount, "EFI", "boot", "grubx64.efi")
-            if os.path.exists(efi_exe_path):
-                efi_size = os.path.getsize(efi_exe_path)
-                print(f"✅ EFI boot executable found: EFI/boot/grubx64.efi ({efi_size} bytes)")
+            # Check 4: EFI boot support (Ubuntu 24.04.2 uses multiple EFI files)
+            efi_dir = os.path.join(temp_mount, "EFI", "boot")
+            if os.path.exists(efi_dir):
+                efi_files = ["bootx64.efi", "grubx64.efi", "mmx64.efi"]
+                found_efi = []
+                for efi_file in efi_files:
+                    efi_path = os.path.join(efi_dir, efi_file)
+                    if os.path.exists(efi_path):
+                        efi_size = os.path.getsize(efi_path)
+                        print(f"✅ Found {efi_file}: {efi_size} bytes")
+                        found_efi.append(efi_file)
+                
+                if "bootx64.efi" in found_efi:
+                    print(f"✅ EFI boot should work: {len(found_efi)}/3 EFI files present")
+                else:
+                    print("❌ Critical: bootx64.efi missing - EFI boot will fail")
             else:
-                print("⚠️ EFI boot executable (EFI/boot/grubx64.efi) not found - EFI boot may fail")
+                print("⚠️ EFI directory not found - EFI boot will fail")
             
             # Check 5: ISO size
             iso_size_gb = os.path.getsize(self.output_iso) / (1024*1024*1024)
@@ -707,8 +744,8 @@ if __name__ == "__main__":
     print()
     print(f"               {DGREEN}N O S A N A{NC}")
     print()
-    print(f"{DGREEN}Building Ubuntu 24.04.2 with autoinstall YAML - v0.00.22{NC}")
-    print("📅 Script Updated: 2025-01-08 15:15 UTC")
+    print(f"{DGREEN}Building Ubuntu 24.04.2 with autoinstall YAML - v0.00.23{NC}")
+    print("📅 Script Updated: 2025-01-08 17:45 UTC")
     print()
     
     # Check for sudo access on Linux
