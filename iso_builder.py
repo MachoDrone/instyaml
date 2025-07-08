@@ -616,9 +616,7 @@ class ISOBuilder:
                 # Make sure all files are writable before deletion
                 subprocess.run(["chmod", "-R", "u+w", self.temp_dir], check=False)
                 shutil.rmtree(self.temp_dir)
-                print("🧹 Cleaned up temporary files, exited sudo")
-                print()  # Blank line after cleanup message
-                # Clear sudo credentials
+                # Clear sudo credentials (silent - message shown in main output)
                 if platform.system() == "Linux":
                     subprocess.run(["sudo", "-k"], check=False)
             except Exception as e:
@@ -667,6 +665,7 @@ class ISOBuilder:
             
             print("=" * 50)
             print(f"📀 {self.output_iso} is ready.")
+            print("🧹 Removed temp files, exited sudo")
             print()
             print("🔥 Next steps:")
             print("1. Burn to USB with Rufus/dd")
@@ -706,10 +705,10 @@ if __name__ == "__main__":
     print(f"{DGREEN}               | \\ \\ \\  |{NC}")
     print(f"{DGREEN}               |  \\_\\ \\_|{NC}")
     print()
-    print(f"  {DGREEN}N O S A N A{NC}")
+    print(f"               {DGREEN}N O S A N A{NC}")
     print()
-    print("Building Ubuntu 24.04.2 with autoinstall YAML - v0.00.21")
-    print("📅 Script Updated: 2025-01-08 15:00 UTC")
+    print(f"{DGREEN}Building Ubuntu 24.04.2 with autoinstall YAML - v0.00.22{NC}")
+    print("📅 Script Updated: 2025-01-08 15:15 UTC")
     print()
     
     # Check for sudo access on Linux
