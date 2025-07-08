@@ -39,11 +39,10 @@ def install_python_dependencies():
             return False
 
 def cleanup_sudo():
-    """Global cleanup function to clear sudo cache"""
+    """Global cleanup function to clear sudo cache (silent for exit handler)"""
     if platform.system() == "Linux":
         try:
             subprocess.run(["sudo", "-k"], check=False)
-            print("🔐 Cleared sudo credentials cache")
         except Exception:
             pass
 
@@ -556,7 +555,7 @@ class ISOBuilder:
             for root, dirs, files in os.walk(temp_mount):
                 file_count += len(files)
             
-            if file_count > 1000:  # Original Ubuntu ISO has ~1079 files
+            if file_count > 800:  # Modified ISO typically has ~871 files (down from ~1079)
                 print(f"✅ File count looks good: {file_count} files")
             else:
                 print(f"⚠️ Low file count: {file_count} files")
@@ -617,7 +616,10 @@ class ISOBuilder:
                 # Make sure all files are writable before deletion
                 subprocess.run(["chmod", "-R", "u+w", self.temp_dir], check=False)
                 shutil.rmtree(self.temp_dir)
-                print("🧹 Cleaned up temporary files")
+                print("🧹 Cleaned up temporary files, exited sudo")
+                # Clear sudo credentials
+                if platform.system() == "Linux":
+                    subprocess.run(["sudo", "-k"], check=False)
             except Exception as e:
                 print(f"⚠️ Cleanup warning: {e}")
                 print("Some temporary files may remain in /tmp/")
@@ -663,13 +665,13 @@ class ISOBuilder:
             self.cleanup_ancillary_files()
             
             print("=" * 50)
-            print("🎉 SUCCESS! Your INSTYAML ISO is ready:")
-            print(f"📀 {self.output_iso}")
-            print(f"📏 Size: {os.path.getsize(self.output_iso) / (1024*1024*1024):.1f} GB")
-            print("\n🔥 Next steps:")
+            print(f"📀 {self.output_iso} is ready.")
+            print()
+            print("🔥 Next steps:")
             print("1. Burn to USB with Rufus/dd")
             print("2. Boot and watch for GitHub-downloaded messages")
             print("3. Edit install.sh in GitHub to test updates")
+            print()
             
             # Offer to remove original ISO
             self.offer_cleanup_original_iso()
@@ -694,8 +696,8 @@ if __name__ == "__main__":
     RESET = '\033[0m'
     
     print()
-    print(f"{BLUE_BOLD}Building Ubuntu 24.04.2 with autoinstall YAML - v0.20.00{RESET}")
-    print("📅 Script Updated: 2025-01-08 14:00 UTC")
+    print(f"{BLUE_BOLD}Building Ubuntu 24.04.2 with autoinstall YAML - v0.00.20{RESET}")
+    print("📅 Script Updated: 2025-01-08 14:30 UTC")
     print()
     
     # Check for sudo access on Linux
