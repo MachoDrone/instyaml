@@ -607,11 +607,8 @@ class ISOBuilder:
     
     def offer_cleanup_original_iso(self):
         """Offer to remove the original Ubuntu ISO to save space"""
-        if os.path.exists(self.iso_filename):
-            print(f"\n💾 Space optimization:")
-            print(f"The original ISO ({self.iso_filename}) is still present.")
-            print(f"You can remove it to save ~3GB if you only need the custom ISO.")
-            print(f"Command to remove: rm -f {self.iso_filename}")
+        # Removed per user request - don't show space optimization suggestions
+        pass
         
     def cleanup(self):
         """Clean up temporary files"""
@@ -696,8 +693,9 @@ if __name__ == "__main__":
     BLUE_BOLD = '\033[1;34m'
     RESET = '\033[0m'
     
-    print(f"{BLUE_BOLD}Building Ubuntu 24.04.2 with autoinstall YAML - v0.19.00{RESET}")
-    print("📅 Script Updated: 2025-01-08 13:30 UTC")
+    print()
+    print(f"{BLUE_BOLD}Building Ubuntu 24.04.2 with autoinstall YAML - v0.20.00{RESET}")
+    print("📅 Script Updated: 2025-01-08 14:00 UTC")
     print()
     
     # Check for sudo access on Linux
