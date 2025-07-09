@@ -16,8 +16,8 @@ class MinimalEFIISOCreator:
         self.work_dir = Path("work")
         self.extract_dir = self.work_dir / "extracted"
         self.output_iso = "helloefi.iso"
-        self.ubuntu_iso_url = "https://releases.ubuntu.com/24.04.2/ubuntu-24.04.2-desktop-amd64.iso"
-        self.ubuntu_iso = "ubuntu-24.04.2-desktop-amd64.iso"
+        self.ubuntu_iso_url = "https://mirror.pilotfiber.com/ubuntu-iso/24.04.2/ubuntu-24.04.2-live-server-amd64.iso"
+        self.ubuntu_iso = "ubuntu-24.04.2-live-server-amd64.iso"
         
     def check_dependencies(self):
         """Check if required tools are available"""
@@ -122,7 +122,7 @@ Purpose: Verify EFI bootable ISO creation
         xorriso_cmd = [
             "xorriso", "-as", "mkisofs",
             "-r",
-            "-V", "HelloEFI Ubuntu 24.04.2",
+                         "-V", "HelloEFI Ubuntu 24.04.2 Server",
             "-J", "-joliet-long",
             "-b", "boot/grub/i386-pc/eltorito.img",
             "-c", "boot.catalog",
