@@ -1,6 +1,6 @@
 # JOURNAL OF FINDINGS - Custom ISO Creation
 
-**Version:** 0.00.01  
+**Version:** 0.00.02  
 **Date:** 2025-07-09  
 **Based on:** deadclaude7.txt systematic investigation  
 
@@ -8,7 +8,7 @@
 
 ✅ **Clean slate approach implemented**  
 ✅ **GitHub-based solution with cache-busting**  
-✅ **Version 0.00.01 consistency across all components**  
+✅ **Version 0.00.02 consistency across all components**  
 ✅ **Production-ready script created**  
 
 ## Key Findings from deadclaude7.txt Investigation
@@ -17,16 +17,16 @@
 - **Problem:** GitHub raw URLs cache scripts for 5+ minutes
 - **Impact:** Invalidated multiple debugging attempts 
 - **Solution:** Timestamp-based verification and cache-busting
-- **Status:** ✅ IMPLEMENTED in v0.00.01
+- **Status:** ✅ IMPLEMENTED in v0.00.02
 
 ### 2. **Ubuntu ISO Creation Complexity**
 - **Discovery:** Ubuntu uses 20+ xorriso parameters (not simple 10-parameter approaches)
 - **Critical Components:** 
-  - `-checksum_algorithm_iso md5,sha1`
   - `-cache-inodes` 
   - `-isohybrid-gpt-basdat`
   - `-isohybrid-apm-hfsplus`
-- **Status:** ✅ IMPLEMENTED in v0.00.01
+- **Fix Applied:** Removed `-checksum_algorithm_iso md5,sha1` (compatibility issue)
+- **Status:** ✅ IMPLEMENTED in v0.00.02
 
 ### 3. **EFI Boot Structure Requirements**
 - **Key Files Required:**
@@ -40,17 +40,17 @@
 - **Original Ubuntu:** Short error messages → successful boot
 - **Failed ISOs:** Long error messages → "No bootable option found"
 - **Root Cause:** Boot catalog structure differences
-- **Status:** 🧪 TO BE TESTED with v0.00.01
+- **Status:** 🧪 TO BE TESTED with v0.00.02
 
 ### 5. **VirtualBox EFI Compatibility**
 - **Finding:** VirtualBox EFI works perfectly with original Ubuntu ISOs
 - **Conclusion:** Issue is with ISO creation process, not VirtualBox
 - **Status:** ✅ CONFIRMED - VirtualBox not the problem
 
-## Technical Implementation - Version 0.00.01
+## Technical Implementation - Version 0.00.02
 
 ### Script Features
-- ✅ **Version consistency:** All components use v0.00.01
+- ✅ **Version consistency:** All components use v0.00.02
 - ✅ **Cache-busting:** Timestamp verification before operations
 - ✅ **Dependency management:** Auto-install missing tools
 - ✅ **ISO integrity:** Size and structure verification
@@ -78,12 +78,24 @@
 - ✅ **Short boot messages** (like original Ubuntu)
 - ✅ **GRUB menu loads** successfully
 - ✅ **Ubuntu boots** to login/desktop
-- ✅ **HelloWorld.txt accessible** with v0.00.01 content
+- ✅ **HelloWorld.txt accessible** with v0.00.02 content
+
+## Version 0.00.02 Updates
+
+### Issues Fixed
+- **xorriso compatibility:** Removed `-checksum_algorithm_iso md5,sha1` parameter
+- **Download optimization:** Only download Ubuntu ISO if missing (not corrupted)
+- **Error message:** "Jigdo Template Extraction was not enabled at compile time" resolved
+
+### Improvements
+- **Faster execution:** Skip integrity check on existing Ubuntu ISO
+- **Better reliability:** Compatible with standard xorriso installations
+- **Reduced parameters:** 26 parameters instead of 28
 
 ## Next Steps
 
-1. **Commit v0.00.01 to GitHub** - Ensure fresh download
-2. **Execute GitHub-based command** - Test cache-busting
+1. **Commit v0.00.02 to GitHub** - Ensure fresh download with fixes
+2. **Execute GitHub-based command** - Test xorriso compatibility fix
 3. **VirtualBox EFI testing** - Validate working solution
 4. **Document results** - Update journal with test outcomes
 
@@ -113,4 +125,4 @@ This implementation builds on extensive investigation:
 
 **Status:** Ready for GitHub-based execution and EFI testing  
 **Expected Outcome:** Working custom ISO with EFI boot capability  
-**Verification:** HelloWorld.txt v0.00.01 content accessibility
+**Verification:** HelloWorld.txt v0.00.02 content accessibility

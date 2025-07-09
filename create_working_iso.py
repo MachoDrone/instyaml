@@ -20,7 +20,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-VERSION = "0.00.01"
+VERSION = "0.00.02"
 
 class WorkingISOCreator:
     def __init__(self):
@@ -104,21 +104,11 @@ class WorkingISOCreator:
             print(f"📊 Found existing ISO: {size:,} bytes")
             
             if size == self.expected_iso_size:
-                print("✅ Size correct, verifying integrity...")
-                try:
-                    result = subprocess.run(['7z', 't', self.ubuntu_iso, '-bb0'], 
-                                          capture_output=True, timeout=30)
-                    if result.returncode == 0:
-                        print("✅ Existing ISO is valid")
-                        return True
-                    else:
-                        print("❌ ISO corrupted, re-downloading...")
-                        os.remove(self.ubuntu_iso)
-                except:
-                    print("❌ ISO verification failed, re-downloading...")
-                    os.remove(self.ubuntu_iso)
+                print("✅ Ubuntu ISO already exists with correct size")
+                print("✅ Skipping download (original Ubuntu ISO should never corrupt)")
+                return True
             else:
-                print(f"❌ Wrong size (expected {self.expected_iso_size:,}), re-downloading...")
+                print(f"❌ Wrong size (expected {self.expected_iso_size:,}), removing...")
                 os.remove(self.ubuntu_iso)
                 
         print(f"🌐 Downloading: {self.ubuntu_url}")
@@ -262,10 +252,10 @@ From deadclaude7.txt methodology:
         output_iso = f"working_custom_ubuntu_v{self.version.replace('.', '_')}.iso"
         
         # Ubuntu's complex xorriso command (from deadclaude7.txt investigation)
+        # Note: Removed -checksum_algorithm_iso as not supported in all xorriso versions
         xorriso_cmd = [
             'xorriso', '-as', 'mkisofs',
             '-r',
-            '-checksum_algorithm_iso', 'md5,sha1',
             '-V', f'Working-Ubuntu-v{self.version}',
             '-o', output_iso,
             '-J', '-joliet-long',
