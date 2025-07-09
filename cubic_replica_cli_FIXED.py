@@ -27,14 +27,62 @@ class CubicReplicaCLI:
         timestamp = datetime.now().strftime("%H:%M:%S")
         print(f"{emoji} {timestamp} {message}")
         
+    def show_sudo_preview(self, cmd, description="command"):
+        """Show what sudo command will be run before executing"""
+        cmd_str = ' '.join(cmd)
+        self.log(f"PREVIEW: Will run sudo command for {description}:", "👁️")
+        print(f"   sudo {cmd_str}")
+        
     def run_sudo(self, cmd, description="command"):
         """Run command with sudo and proper error handling"""
+        self.show_sudo_preview(cmd, description)
+        
+        # Ask for confirmation in interactive mode
+        if sys.stdin.isatty():
+            response = input("🔐 Proceed with sudo command? [y/N]: ")
+            if response.lower() not in ['y', 'yes']:
+                self.log("Sudo command cancelled by user", "⚠️")
+                return False, "Cancelled by user"
+        
         self.log(f"Running {description} (with sudo)...", "🔐")
         result = subprocess.run(['sudo'] + cmd, capture_output=True, text=True)
         if result.returncode != 0:
             self.log(f"Failed {description}: {result.stderr}", "❌")
             return False, result.stderr
         return True, result.stdout
+        
+    def show_version_info(self):
+        """Display version and system info before any sudo commands"""
+        print(f"🎯 CUBIC REPLICA CLI v{self.version}")
+        print("=" * 60)
+        print(f"📅 Start Time: {self.start_time}")
+        print(f"🖥️  System: {os.uname().sysname} {os.uname().release}")
+        print(f"👤 User: {os.getenv('USER', 'unknown')}")
+        print(f"📂 Working Directory: {os.getcwd()}")
+        print(f"📁 Target ISO: {self.output_iso}")
+        print()
+        self.log("🔧 FIXED: Proper squashfs handling with sudo", "")
+        self.log("🎯 Target: Match Cubic's 419MB squashfs size", "")
+        print()
+        
+        # Show what sudo commands will be needed
+        print("⚠️  SUDO COMMANDS REQUIRED:")
+        print("   1. sudo apt update && sudo apt install (dependencies)")
+        print("   2. sudo rm -rf (cleanup work directories)")  
+        print("   3. sudo unsquashfs (extract live filesystem)")
+        print("   4. sudo tee (add files to live filesystem)")
+        print("   5. sudo mksquashfs (recompress live filesystem)")
+        print("   6. sudo rm -rf (final cleanup)")
+        print()
+        
+        if sys.stdin.isatty():
+            response = input("🚀 Continue with ISO creation? [y/N]: ")
+            if response.lower() not in ['y', 'yes']:
+                self.log("Script cancelled by user", "⚠️")
+                return False
+        
+        print("=" * 60)
+        return True
         
     def check_dependencies(self):
         self.log("CHECKING DEPENDENCIES", "🔍")
@@ -109,7 +157,9 @@ class CubicReplicaCLI:
         print("-" * 40)
         
         if self.work_dir.exists():
-            subprocess.run(['sudo', 'rm', '-rf', str(self.work_dir)], check=True)
+            success, error = self.run_sudo(['rm', '-rf', str(self.work_dir)], "cleanup old work directory")
+            if not success:
+                return False
         self.work_dir.mkdir()
         
         extract_dir = self.work_dir / "extracted"
@@ -208,15 +258,17 @@ Target size: ~419MB (like Cubic)
         
         # Add HelloWorld.txt to root of live filesystem
         hello_file = modified_dir / "HelloWorld.txt"
-        subprocess.run(['sudo', 'tee', str(hello_file)], input=custom_content, text=True, capture_output=True)
-        self.log(f"Added HelloWorld.txt to live filesystem", "✅")
+        result = subprocess.run(['sudo', 'tee', str(hello_file)], input=custom_content, text=True, capture_output=True)
+        if result.returncode == 0:
+            self.log(f"Added HelloWorld.txt to live filesystem", "✅")
         
         # Add to home directory as well
         home_dir = modified_dir / "home"
         if home_dir.exists():
             home_hello = home_dir / "HelloWorld.txt"
-            subprocess.run(['sudo', 'tee', str(home_hello)], input=custom_content, text=True, capture_output=True)
-            self.log(f"Added HelloWorld.txt to /home", "✅")
+            result = subprocess.run(['sudo', 'tee', str(home_hello)], input=custom_content, text=True, capture_output=True)
+            if result.returncode == 0:
+                self.log(f"Added HelloWorld.txt to /home", "✅")
         
         # FIXED: Recompress squashfs with settings that match Cubic's ~419MB output
         self.log("Recompressing squashfs filesystem with FIXED settings...", "🔧")
@@ -267,7 +319,9 @@ Target size: ~419MB (like Cubic)
         self.log("Filesystem sizes updated", "✅")
         
         # FIXED: Cleanup with sudo since files may have root ownership
-        subprocess.run(['sudo', 'rm', '-rf', str(modified_dir)], check=True)
+        success, error = self.run_sudo(['rm', '-rf', str(modified_dir)], "cleanup extracted squashfs")
+        if not success:
+            self.log("Warning: Could not cleanup extracted files", "⚠️")
         
         return True
         
@@ -430,16 +484,17 @@ Target size: ~419MB (like Cubic)
             
     def cleanup(self):
         if self.work_dir.exists():
-            subprocess.run(['sudo', 'rm', '-rf', str(self.work_dir)], check=True)
-            self.log("Cleanup completed", "🧹")
+            success, error = self.run_sudo(['rm', '-rf', str(self.work_dir)], "final cleanup")
+            if success:
+                self.log("Cleanup completed", "🧹")
+            else:
+                self.log("Warning: Cleanup failed", "⚠️")
             
     def run(self):
-        print(f"🎯 CUBIC REPLICA CLI v{self.version}")
-        print("=" * 50)
-        self.log(f"Started: {self.start_time}")
-        self.log("FIXED: Proper squashfs handling with sudo", "🔧")
-        print()
-        
+        # Show version info and sudo preview FIRST
+        if not self.show_version_info():
+            return False
+            
         try:
             if not self.check_dependencies():
                 return False
