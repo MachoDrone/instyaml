@@ -109,35 +109,92 @@ echo "Checking critical EFI bootloaders:"
 - `mmx64.efi` (856,280 bytes) ✓
 ✅ **Correct file sizes match original exactly**
 
+## Phase 4: Boot Structure Deep Analysis
+
+### Investigation Commands
+```bash
+# Check for missing efiboot.img
+echo "=== EFIBOOT.IMG CHECK ==="
+7z l working_custom_ubuntu_v0_00_03.iso | grep -i "efiboot.img"
+
+# Compare boot catalog structure  
+echo "=== BOOT CATALOG COMPARISON ==="
+echo "Original:"
+7z l ubuntu-24.04.2-live-server-amd64.iso | grep -i "boot.cat"
+echo "Custom:"
+7z l working_custom_ubuntu_v0_00_03.iso | grep -i "boot.cat"
+
+# Check ISO format/metadata differences
+echo "=== ISO FORMAT ANALYSIS ==="
+echo "Original ISO:"
+file ubuntu-24.04.2-live-server-amd64.iso
+echo "Custom ISO:"  
+file working_custom_ubuntu_v0_00_03.iso
+
+# Check for hybrid boot structure
+echo "=== HYBRID BOOT CHECK ==="
+echo "Original:"
+dd if=ubuntu-24.04.2-live-server-amd64.iso bs=512 count=1 2>/dev/null | xxd | head -2
+echo "Custom:"
+dd if=working_custom_ubuntu_v0_00_03.iso bs=512 count=1 2>/dev/null | xxd | head -2
+```
+
+## 🚨 ROOT CAUSE IDENTIFIED!
+
+### EFIBOOT.IMG Missing
+```
+=== EFIBOOT.IMG CHECK ===
+(empty result - NO efiboot.img found in custom ISO)
+```
+❌ **Critical**: Custom ISO is **missing efiboot.img** - essential for EFI boot!
+
+### Boot Catalog Structure
+```
+Original: boot.catalog (2048 bytes)
+Custom:   boot.catalog (2048 bytes)
+```
+✅ **Boot catalog identical** - not the issue
+
+### ISO Format Analysis  
+```
+Original: ISO 9660 CD-ROM filesystem data (DOS/MBR boot sector) 'Ubuntu-Server 24.04.2 LTS amd64' (bootable)
+Custom:   ISO 9660 CD-ROM filesystem data 'Working-Ubuntu-v0.00.03' (bootable)
+```
+❌ **Critical**: Custom ISO **missing "(DOS/MBR boot sector)"** - hybrid boot structure missing!
+
+### Hybrid Boot Structure (MBR Headers)
+```
+Original: eb63 9090 9090 9090...  # Proper MBR boot signature
+Custom:   0000 0000 0000 0000...  # All zeros = NO MBR boot sector!
+```
+❌ **SMOKING GUN**: Custom ISO has **no MBR boot sector** - completely missing hybrid boot structure!
+
 ## Analysis & Next Steps
 
 ### What This Means
 1. **EFI structure is NOT the problem** - files are identical
 2. **xorriso version is NOT the problem** - latest stable version
-3. **The issue must be elsewhere** in the ISO creation process
+3. ❌ **Missing efiboot.img** - Critical EFI boot image missing
+4. ❌ **Missing hybrid boot structure** - No MBR boot sector for EFI compatibility
 
-### Remaining Investigation Areas
-1. **ISO hybrid/partition structure** - GPT vs MBR issues
-2. **Boot catalog configuration** - El Torito boot settings  
-3. **File system timestamps/metadata** - Creation process differences
-4. **VirtualBox-specific compatibility** - Test with other EFI systems
-5. **Hidden efiboot.img issues** - Check for missing/corrupt efiboot.img
+### Root Cause: Incomplete xorriso Command
+The current xorriso command is **not creating Ubuntu's hybrid ISO structure**:
+- Missing `-isohybrid-gpt-basdat` parameter for GPT compatibility
+- Missing efiboot.img creation and inclusion
+- Missing hybrid MBR boot sector generation
 
-### Next Commands to Run
+### Required Fix: Update xorriso Parameters
+Must add Ubuntu's complete hybrid boot structure:
 ```bash
-# Check for efiboot.img specifically
-7z l working_custom_ubuntu_v0_00_03.iso | grep -i "efiboot.img"
-
-# Compare boot catalog structure
-7z l ubuntu-24.04.2-live-server-amd64.iso | grep -i "boot.cat"
-7z l working_custom_ubuntu_v0_00_03.iso | grep -i "boot.cat"
-
-# Check ISO creation method differences
-file ubuntu-24.04.2-live-server-amd64.iso
-file working_custom_ubuntu_v0_00_03.iso
+# Required additional parameters:
+-isohybrid-gpt-basdat          # Create hybrid GPT structure  
+-isohybrid-apm-hfsplus         # Apple partition map support
+-partition_offset 16           # Proper partition alignment
+-e EFI/boot/efiboot.img        # MUST create and use efiboot.img
+-no-emul-boot                  # EFI no emulation mode
 ```
 
-## Status: Investigation Ongoing
-- ❌ **Problem**: Custom ISO EFI boot failure in VirtualBox
-- ✅ **Eliminated**: xorriso version, EFI file structure, bootloader presence
-- 🔍 **Focus**: Boot configuration, partition structure, ISO metadata differences
+## Status: Root Cause Found
+- ❌ **Problem**: Custom ISO missing hybrid boot structure and efiboot.img
+- ✅ **Eliminated**: xorriso version, EFI file structure, bootloader presence  
+- 🎯 **Solution**: Fix xorriso command to create proper Ubuntu hybrid ISO structure
