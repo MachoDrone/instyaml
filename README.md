@@ -1,44 +1,57 @@
-# INSTYAML - Ubuntu Server Auto-Installer
+# Minimal EFI Bootable ISO Creator
 
-A system for creating lightweight, updateable Ubuntu Server installations using cloud-init and GitHub-hosted installer scripts.
-
-> **Note**: This project is for Ubuntu 24.04.2 Server automated installation - not related to AI model selection.
-
-## How It Works
-
-1. **Modified ISO**: Ubuntu 24.04.2 Live Server ISO modified to include `autoinstall.yaml`
-2. **Boot Process**: ISO boots and automatically runs the autoinstall YAML
-3. **Network Setup**: YAML establishes network connectivity via DHCP
-4. **Script Download**: Downloads `install.sh` from this GitHub repository
-5. **Execution**: Runs the installer script to customize the OS
+## Purpose
+Prove EFI bootable ISO creation works with minimal complexity:
+- ✅ Create EFI bootable Ubuntu 24.04.2 ISO
+- ✅ Inject HelloWorld.txt to verify customization 
+- ✅ Test EFI boot functionality
 
 ## Files
+- `create_efi_iso.py` - Main script to create EFI bootable ISO
+- `test_efi_boot.py` - Script to test EFI boot functionality
+- `README.md` - This file
 
-- `autoinstall.yaml` - Cloud-init configuration file (embed in ISO)
-- `install.sh` - Installer script (hosted on GitHub, downloaded during install)
+## Quick Start
 
-## Workflow
+### 1. Install Dependencies
+```bash
+sudo apt install xorriso p7zip-full wget
+```
 
-1. Create modified ISO with `autoinstall.yaml` embedded
-2. Boot from ISO (VM or physical hardware)
-3. Watch for test messages from `install.sh`
-4. Edit `install.sh` in GitHub to update installer logic
-5. Reboot same ISO to test updates
+### 2. Create EFI ISO
+```bash
+python3 create_efi_iso.py
+```
 
-## Benefits
+### 3. Test EFI Boot
+```bash
+python3 test_efi_boot.py
+```
 
-- ✅ Update installer logic without rebuilding ISOs
-- ✅ End users create USB boot media once
-- ✅ Rapid iteration and testing
-- ✅ Internet-based updates
+## Expected Results
+- ✅ `helloefi.iso` created (~4.7GB)
+- ✅ HelloWorld.txt injected successfully
+- ✅ EFI boot structure preserved
+- ✅ ISO boots with EFI firmware
+- ✅ Ubuntu loads normally
 
-## Testing
+## Success Criteria
+ONLY declare success when:
+1. ISO creates without errors
+2. HelloWorld.txt found in ISO
+3. VM boots with EFI firmware enabled
+4. GRUB menu appears correctly
+5. Ubuntu boots to desktop
+6. HelloWorld.txt accessible in filesystem
 
-The current `install.sh` displays test messages to verify:
-- ISO boots correctly
-- YAML executes
-- Network connectivity works
-- GitHub repository is accessible
-- Remote script execution functions
+## Key Technical Details
+- Uses `xorriso -as mkisofs` for ISO creation
+- Critical: `-e EFI/boot/bootx64.efi` for Ubuntu 24.04.2
+- Preserves dual BIOS/EFI boot capability
+- Minimal file injection to prove concept
 
-Edit the message in `install.sh` and reboot to test the update mechanism.
+## Next Steps After Success
+1. Document exact EFI boot behavior
+2. Expand to real customizations (autoinstall, etc.)
+3. Create comprehensive test suite
+4. Implement proper error handling
