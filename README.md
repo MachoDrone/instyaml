@@ -13,7 +13,8 @@
 
 - **`deadclaude7.txt`** - Complete technical investigation (2,957 lines)
 - **`working_custom_iso.py`** - Production-ready custom ISO creator
-- **`archive_previous_claude/`** - All previous attempts safely archived
+- **`archive_all/`** - Historical investigations (deadclaude1-6, research, logs)
+- **`archive_previous_claude/`** - Most recent Claude session files
 
 ## Quick Start
 
