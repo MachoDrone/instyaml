@@ -79,7 +79,7 @@ def test_iso_partition_table(iso_path):
             print("💡 Test the ISO in VirtualBox with EFI enabled")
         else:
             print("\n⚠️ ISSUES DETECTED: EFI boot may fail")
-            print("💡 Try running iso_builder.py v0.00.26 to rebuild")
+            print("💡 Try running iso_builder.py v0.00.27 to rebuild")
         
         return success
         
@@ -94,7 +94,7 @@ def test_iso_partition_table(iso_path):
         return False
 
 def main():
-    print("🔧 EFI Boot Fix Test Script v0.00.26")
+    print("🔧 EFI Boot Fix Test Script v0.00.27")
     print("=" * 50)
     
     # Look for INSTYAML ISO in current directory
