@@ -1,6 +1,6 @@
 # JOURNAL OF FINDINGS - Custom ISO Creation
 
-**Version:** 0.00.02  
+**Version:** 0.00.03  
 **Date:** 2025-07-09  
 **Based on:** deadclaude7.txt systematic investigation  
 
@@ -8,7 +8,7 @@
 
 ✅ **Clean slate approach implemented**  
 ✅ **GitHub-based solution with cache-busting**  
-✅ **Version 0.00.02 consistency across all components**  
+✅ **Version 0.00.03 consistency across all components**  
 ✅ **Production-ready script created**  
 
 ## Key Findings from deadclaude7.txt Investigation
@@ -17,7 +17,7 @@
 - **Problem:** GitHub raw URLs cache scripts for 5+ minutes
 - **Impact:** Invalidated multiple debugging attempts 
 - **Solution:** Timestamp-based verification and cache-busting
-- **Status:** ✅ IMPLEMENTED in v0.00.02
+- **Status:** ✅ IMPLEMENTED in v0.00.03
 
 ### 2. **Ubuntu ISO Creation Complexity**
 - **Discovery:** Ubuntu uses 20+ xorriso parameters (not simple 10-parameter approaches)
@@ -26,7 +26,7 @@
   - `-isohybrid-gpt-basdat`
   - `-isohybrid-apm-hfsplus`
 - **Fix Applied:** Removed `-checksum_algorithm_iso md5,sha1` (compatibility issue)
-- **Status:** ✅ IMPLEMENTED in v0.00.02
+- **Status:** ✅ IMPLEMENTED in v0.00.03
 
 ### 3. **EFI Boot Structure Requirements**
 - **Key Files Required:**
@@ -40,17 +40,17 @@
 - **Original Ubuntu:** Short error messages → successful boot
 - **Failed ISOs:** Long error messages → "No bootable option found"
 - **Root Cause:** Boot catalog structure differences
-- **Status:** 🧪 TO BE TESTED with v0.00.02
+- **Status:** 🧪 TO BE TESTED with v0.00.03
 
 ### 5. **VirtualBox EFI Compatibility**
 - **Finding:** VirtualBox EFI works perfectly with original Ubuntu ISOs
 - **Conclusion:** Issue is with ISO creation process, not VirtualBox
 - **Status:** ✅ CONFIRMED - VirtualBox not the problem
 
-## Technical Implementation - Version 0.00.02
+## Technical Implementation - Version 0.00.03
 
 ### Script Features
-- ✅ **Version consistency:** All components use v0.00.02
+- ✅ **Version consistency:** All components use v0.00.03
 - ✅ **Cache-busting:** Timestamp verification before operations
 - ✅ **Dependency management:** Auto-install missing tools
 - ✅ **ISO integrity:** Size and structure verification
@@ -78,7 +78,7 @@
 - ✅ **Short boot messages** (like original Ubuntu)
 - ✅ **GRUB menu loads** successfully
 - ✅ **Ubuntu boots** to login/desktop
-- ✅ **HelloWorld.txt accessible** with v0.00.02 content
+- ✅ **HelloWorld.txt accessible** with v0.00.03 content
 
 ## Version 0.00.02 Updates
 
@@ -92,11 +92,32 @@
 - **Better reliability:** Compatible with standard xorriso installations
 - **Reduced parameters:** 26 parameters instead of 28
 
+### Test Results v0.00.02
+❌ **EFI Boot Still Failed:** Same Boot0001/0002/0003 failures as before
+✅ **ISO Creation Successful:** `working_custom_ubuntu_v0_00_02.iso` created
+❌ **Boot Comparison:** Original Ubuntu boots directly to GRUB, ours shows errors
+
+## Version 0.00.03 Updates
+
+### Critical Insight Applied
+- **EFI Boot File Change:** Using `grubx64.efi` instead of `bootx64.efi` as PRIMARY EFI boot
+- **deadclaude7.txt Reference:** Investigation identified grubx64.efi as "MAIN EFI BOOT" (2,320,264 bytes)
+- **Boot Sequence Theory:** Original Ubuntu may use grubx64.efi for direct GRUB access
+
+### Technical Changes
+- **xorriso parameter:** `-e EFI/boot/grubx64.efi` (was bootx64.efi)
+- **Version checking:** Display xorriso version for debugging
+- **Latest xorriso:** Ensure most recent version for better EFI support
+
+### Hypothesis
+- **bootx64.efi:** Fallback EFI loader (966,664 bytes)
+- **grubx64.efi:** Main EFI GRUB loader (2,320,264 bytes) - should boot directly to GRUB
+
 ## Next Steps
 
-1. **Commit v0.00.02 to GitHub** - Ensure fresh download with fixes
-2. **Execute GitHub-based command** - Test xorriso compatibility fix
-3. **VirtualBox EFI testing** - Validate working solution
+1. **Commit v0.00.03 to GitHub** - Ensure fresh download with grubx64.efi fix
+2. **Execute GitHub-based command** - Test grubx64.efi as primary EFI boot
+3. **VirtualBox EFI testing** - Should boot directly to GRUB like original Ubuntu
 4. **Document results** - Update journal with test outcomes
 
 ## Command to Execute
@@ -125,4 +146,4 @@ This implementation builds on extensive investigation:
 
 **Status:** Ready for GitHub-based execution and EFI testing  
 **Expected Outcome:** Working custom ISO with EFI boot capability  
-**Verification:** HelloWorld.txt v0.00.02 content accessibility
+**Verification:** HelloWorld.txt v0.00.03 content accessibility

@@ -20,7 +20,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-VERSION = "0.00.02"
+VERSION = "0.00.03"
 
 class WorkingISOCreator:
     def __init__(self):
@@ -74,7 +74,19 @@ class WorkingISOCreator:
             try:
                 result = subprocess.run(['which', tool], capture_output=True, timeout=5)
                 if result.returncode == 0:
-                    print(f"✅ {tool}: Available")
+                    if tool == 'xorriso':
+                        # Check xorriso version
+                        try:
+                            version_result = subprocess.run(['xorriso', '-version'], capture_output=True, text=True, timeout=5)
+                            if version_result.returncode == 0:
+                                version_line = version_result.stdout.split('\n')[0]
+                                print(f"✅ {tool}: Available ({version_line})")
+                            else:
+                                print(f"✅ {tool}: Available (version unknown)")
+                        except:
+                            print(f"✅ {tool}: Available (version check failed)")
+                    else:
+                        print(f"✅ {tool}: Available")
                 else:
                     missing_tools.append(tool)
                     print(f"❌ {tool}: Missing")
@@ -84,10 +96,21 @@ class WorkingISOCreator:
                 
         if missing_tools:
             print(f"\n🔧 Installing missing tools: {', '.join(missing_tools)}")
+            print("💡 Installing latest available xorriso for better EFI support")
             try:
                 subprocess.run(['sudo', 'apt', 'update'], check=True)
                 subprocess.run(['sudo', 'apt', 'install', '-y', 'xorriso', 'p7zip-full', 'wget', 'dosfstools'], check=True)
                 print("✅ Dependencies installed successfully")
+                
+                # Check if we got a newer version
+                try:
+                    version_result = subprocess.run(['xorriso', '-version'], capture_output=True, text=True, timeout=5)
+                    if version_result.returncode == 0:
+                        version_line = version_result.stdout.split('\n')[0]
+                        print(f"📋 Installed xorriso: {version_line}")
+                except:
+                    pass
+                    
             except subprocess.CalledProcessError as e:
                 print(f"❌ Installation failed: {e}")
                 return False
@@ -252,7 +275,8 @@ From deadclaude7.txt methodology:
         output_iso = f"working_custom_ubuntu_v{self.version.replace('.', '_')}.iso"
         
         # Ubuntu's complex xorriso command (from deadclaude7.txt investigation)
-        # Note: Removed -checksum_algorithm_iso as not supported in all xorriso versions
+        # Key insight: Use grubx64.efi as PRIMARY EFI boot (not bootx64.efi)
+        # deadclaude7.txt identified grubx64.efi as "MAIN EFI BOOT" file
         xorriso_cmd = [
             'xorriso', '-as', 'mkisofs',
             '-r',
@@ -266,9 +290,9 @@ From deadclaude7.txt methodology:
             '-no-emul-boot',
             '-boot-load-size', '4',
             '-boot-info-table',
-            # EFI boot support (critical fix from deadclaude7.txt)
+            # EFI boot support - CRITICAL CHANGE: Use grubx64.efi as primary
             '-eltorito-alt-boot',
-            '-e', 'EFI/boot/bootx64.efi',
+            '-e', 'EFI/boot/grubx64.efi',
             '-no-emul-boot',
             # Hybrid compatibility (essential for EFI)
             '-isohybrid-gpt-basdat',
