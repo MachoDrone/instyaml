@@ -12,6 +12,11 @@ from pathlib import Path
 
 class ISOIntegrityFixer:
     def __init__(self):
+        # Use ~/iso as working directory to match user's workflow
+        self.iso_dir = Path.home() / "iso"
+        self.iso_dir.mkdir(exist_ok=True)
+        os.chdir(self.iso_dir)
+        
         self.ubuntu_iso = "ubuntu-24.04.2-live-server-amd64.iso"
         self.expected_size = 3213064192  # Official Ubuntu Server size
         self.expected_sha256 = "9a17ce2b9bbf82e8dc3b5b3d2e6d3de76b0c2c937c7c9bd6e2b7f0b2c4b5e9d8"  # Example
@@ -131,6 +136,7 @@ class ISOIntegrityFixer:
         """Main execution flow"""
         print("🚀 ISO Integrity Fixer")
         print("=" * 40)
+        print(f"📂 Working in: {os.getcwd()}")
         
         # Check current ISO
         if self.check_iso_integrity() and self.test_iso_extraction():

@@ -13,7 +13,12 @@ from pathlib import Path
 
 class CompleteEFISolution:
     def __init__(self):
-        self.work_dir = Path("work")
+        # Use ~/iso as working directory to match user's workflow
+        self.iso_dir = Path.home() / "iso"
+        self.iso_dir.mkdir(exist_ok=True)
+        os.chdir(self.iso_dir)
+        
+        self.work_dir = self.iso_dir / "work"
         self.extract_dir = self.work_dir / "extracted"
         self.output_iso = "helloefi.iso"
         self.ubuntu_iso_url = "https://mirror.pilotfiber.com/ubuntu-iso/24.04.2/ubuntu-24.04.2-live-server-amd64.iso"
@@ -116,6 +121,11 @@ Purpose: Verify EFI bootable ISO creation
         hello_file.write_text(hello_content)
         print(f"✅ HelloWorld.txt created at {hello_file}")
         return True
+    
+    def show_working_directory(self):
+        """Show current working directory for user reference"""
+        print(f"📂 Working in: {os.getcwd()}")
+        print(f"📂 ISO files will be created in: {self.iso_dir}")
     
     def analyze_original_iso(self):
         """Analyze original Ubuntu ISO EFI structure"""
@@ -337,6 +347,7 @@ Purpose: Verify EFI bootable ISO creation
         print("🚀 Complete EFI ISO Solution - All-in-One")
         print("=" * 60)
         print("Purpose: Create, debug, and fix EFI bootable ISO")
+        self.show_working_directory()
         
         steps = [
             ("Check Dependencies", self.check_dependencies),
