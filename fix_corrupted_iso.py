@@ -2,7 +2,11 @@
 """
 Fix Corrupted ISO - Download Fresh Ubuntu Server ISO
 Purpose: Detect and fix corrupted ISO downloads
+VERSION: 1.0.1 - Cache-busted with version display
 """
+
+VERSION = "1.0.1"
+SCRIPT_NAME = "fix_corrupted_iso.py"
 
 import os
 import sys
@@ -136,7 +140,8 @@ class ISOIntegrityFixer:
         """Main execution flow"""
         print("🚀 ISO Integrity Fixer")
         print("=" * 40)
-        print(f"📂 Working in: {os.getcwd()}")
+        print(f"� SCRIPT: {SCRIPT_NAME} VERSION: {VERSION}")
+        print(f"�📂 Working in: {os.getcwd()}")
         
         # Check current ISO
         if self.check_iso_integrity() and self.test_iso_extraction():

@@ -2,7 +2,11 @@
 """
 Complete EFI ISO Solution - One Script Does Everything
 Purpose: Create, debug, and fix EFI bootable ISO in one command
+VERSION: 1.0.2 - Cache-busted with version display
 """
+
+VERSION = "1.0.2"
+SCRIPT_NAME = "complete_efi_solution.py"
 
 import os
 import sys
@@ -346,6 +350,7 @@ Purpose: Verify EFI bootable ISO creation
         """Main execution flow"""
         print("🚀 Complete EFI ISO Solution - All-in-One")
         print("=" * 60)
+        print(f"📋 SCRIPT: {SCRIPT_NAME} VERSION: {VERSION}")
         print("Purpose: Create, debug, and fix EFI bootable ISO")
         self.show_working_directory()
         

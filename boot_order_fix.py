@@ -2,7 +2,11 @@
 """
 Boot Order Fix - Use Ubuntu's Exact xorriso Boot Sequence
 Purpose: Fix boot catalog order to match successful Ubuntu ISO
+VERSION: 1.0.1 - Cache-busted with version display
 """
+
+VERSION = "1.0.1"
+SCRIPT_NAME = "boot_order_fix.py"
 
 import os
 import sys
@@ -201,8 +205,9 @@ class BootOrderFix:
     
     def run(self):
         """Main execution flow"""
-        print("🚀 Boot Order Fix - Match Ubuntu's Boot Sequence")
+        print(f"🚀 Boot Order Fix - Match Ubuntu's Boot Sequence")
         print("=" * 60)
+        print(f"📋 SCRIPT: {SCRIPT_NAME} VERSION: {VERSION}")
         print(f"📂 Working in: {os.getcwd()}")
         print("🎯 Goal: Create ISO with shorter boot error messages")
         
