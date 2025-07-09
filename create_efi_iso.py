@@ -20,7 +20,7 @@ class MinimalEFIISOCreator:
         self.ubuntu_iso = "ubuntu-24.04.2-live-server-amd64.iso"
         
     def check_dependencies(self):
-        """Check if required tools are available"""
+        """Check and auto-install required tools"""
         print("🔍 Checking dependencies...")
         required = ["xorriso", "7z"]
         missing = []
@@ -30,9 +30,28 @@ class MinimalEFIISOCreator:
                 missing.append(tool)
         
         if missing:
-            print(f"❌ Missing tools: {missing}")
-            print("Install with: sudo apt install xorriso p7zip-full")
-            return False
+            print(f"📥 Missing tools: {missing}")
+            print("🔧 Auto-installing dependencies...")
+            
+            try:
+                subprocess.run(["sudo", "apt", "update"], check=True)
+                subprocess.run(["sudo", "apt", "install", "-y", "xorriso", "p7zip-full", "wget"], check=True)
+                print("✅ Dependencies installed successfully")
+                
+                # Verify installation
+                still_missing = []
+                for tool in required:
+                    if shutil.which(tool) is None:
+                        still_missing.append(tool)
+                
+                if still_missing:
+                    print(f"❌ Failed to install: {still_missing}")
+                    return False
+                    
+            except subprocess.CalledProcessError as e:
+                print(f"❌ Failed to install dependencies: {e}")
+                print("Please run manually: sudo apt install xorriso p7zip-full wget")
+                return False
         
         print("✅ All dependencies available")
         return True
