@@ -150,13 +150,8 @@ class NosanaScraper:
             return True
             
         # Check for navigation/menu elements (common patterns)
-        class_names = element_attrs.get('class', [])
-        if isinstance(class_names, list):
-            class_names_str = ' '.join(class_names).lower()
-        else:
-            class_names_str = str(class_names).lower()
-        
-        if any(cls in class_names_str for cls in ['nav', 'menu', 'header', 'footer', 'sidebar']):
+        class_names = element_attrs.get('class', '').lower()
+        if any(cls in class_names for cls in ['nav', 'menu', 'header', 'footer', 'sidebar']):
             return True
             
         return False
