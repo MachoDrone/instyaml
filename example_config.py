@@ -1,41 +1,70 @@
 #!/usr/bin/env python3
 """
-Example configuration for Nosana Dashboard Scraper
-Customize this file for your specific scraping needs
+Enhanced example configuration for Nosana Dashboard scraping
 """
 
-from nosana_scraper import ScrapingConfig, NosanaScraper
+from nosana_scraper import NosanaScraper, ScrapingConfig
 
 def main():
-    # Create configuration
+    # Create configuration using the ScrapingConfig class
     config = ScrapingConfig(
         base_url="https://dashboard.nosana.com/",
-        max_depth=1,  # Start with 1, increase as needed
-        delay_between_requests=2.0,  # Be respectful to the server
-        timeout=10,
-        output_format="json"  # or "csv" or "txt"
+        max_depth=3,  # Navigate up to 3 levels deep
+        delay_between_requests=2.0,  # 2 seconds between requests
+        timeout=15,  # Increased timeout for better reliability
+        output_format="json"
     )
     
-    # Customize excluded elements (add more as needed)
-    # NOTE: Explorer is NOT excluded - we want to click it to access GPUs
-    if config.excluded_elements:
-        config.excluded_elements.extend([
-            'GPUs Available',  # The counter text, not the actual GPU section
-            '311/1132',       # The specific numbers
-            # Add any other elements you want to avoid
-        ])
+    # Enhanced exclusions list - FIXED to allow Deployments/Explorer navigation
+    if config.excluded_elements is None:
+        config.excluded_elements = []
     
-    # Add custom clickable selectors if needed
-    # config.clickable_selectors.extend([
-    #     '.custom-button',
-    #     '[data-action="navigate"]',
-    # ])
+    config.excluded_elements.extend([
+        # SPECIFIC deploy exclusions to avoid blocking "Deployments" navigation
+        'create a deployment',  # Specific creation action
+        'Create a deployment', 
+        'new deployment',
+        'New deployment',
+        'deploy model',  # Model deployment specific
+        'Deploy Model',
+        # Connection and UI elements
+        'connect wallet', 'Connect Wallet',
+        'global priority fee', 'Global Priority Fee',
+        'gpus available', 'GPUs Available',  # Counter text, not navigation
+        'select wallet', 'Select Wallet',
+        # Keep existing safe exclusions
+        'profile', 'Profile',
+        'help & support', 'Help & Support',
+        'healthy', 'Healthy',
+        'nosana dashboard', 'Nosana dashboard',
+        '© 2025 nosana', '© 2025 Nosana'
+    ])
+    
+    if config.excluded_text_patterns is None:
+        config.excluded_text_patterns = []
+        
+    config.excluded_text_patterns.extend([
+        # SPECIFIC deployment patterns to avoid blocking "Deployments" 
+        'create deployment',
+        'new deployment', 
+        'model deployment',
+        'deploy new',
+        'deploy a ',  # "deploy a model" etc
+        # Safety patterns
+        'logout', 'sign out', 'sign-out', 'log out',
+        'delete', 'remove', 'cancel', 
+        'close account', 'terminate', 'destroy'
+    ])
+    
+    print("🚀 Starting scraper with updated exclusions...")
+    print("📍 Targeting: Explorer → GPUs → Host Leaderboard")
+    print("🚫 Fixed exclusions to allow Deployments/Explorer navigation")
+    print("✅ Removed overly broad 'deploy' exclusions")
     
     # Create and run scraper
     scraper = NosanaScraper(config)
     
     try:
-        print("🚀 Starting scraper...")
         results = scraper.scrape_with_depth()
         print(f"✅ Scraped {len(results)} pages successfully")
         
@@ -44,7 +73,7 @@ def main():
         print(f"💾 Results saved to: {output_file}")
         
         # Print summary
-        print("\n📊 Scraping Summary:")
+        print(f"\n📊 Scraping Summary:")
         for page in results:
             print(f"  Depth {page.depth}: {page.title} - {page.url}")
             

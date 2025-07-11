@@ -149,14 +149,16 @@ class NosanaScraper:
         if element_attrs.get('data-exclude') == 'true':
             return True
             
-        # Check for navigation/menu elements (common patterns)
+        # Check for top-level navigation/menu elements (be more specific)
         class_names = element_attrs.get('class', [])
         if isinstance(class_names, list):
             class_names_str = ' '.join(class_names).lower()
         else:
             class_names_str = str(class_names).lower()
         
-        if any(cls in class_names_str for cls in ['nav', 'menu', 'header', 'footer', 'sidebar']):
+        # Only exclude main navigation, not submenus (allow submenu-link for Explorer navigation)
+        exclude_classes = ['main-nav', 'navbar', 'main-menu', 'top-header', 'site-footer', 'main-sidebar']
+        if any(cls in class_names_str for cls in exclude_classes):
             return True
             
         return False
