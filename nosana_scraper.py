@@ -16,6 +16,7 @@ from datetime import datetime
 try:
     from selenium import webdriver
     from selenium.webdriver.common.by import By
+    from selenium.webdriver.common.action_chains import ActionChains
     from selenium.webdriver.support.ui import WebDriverWait
     from selenium.webdriver.support import expected_conditions as EC
     from selenium.webdriver.chrome.options import Options as ChromeOptions
@@ -44,6 +45,7 @@ class ScrapedPage:
     links: List[str]
     images: List[str]
     metadata: Dict[str, str]
+    hover_data: Dict[str, str]
     timestamp: str
     depth: int
     source_url: Optional[str] = None
@@ -80,7 +82,7 @@ class ScrapingConfig:
             self.excluded_elements = [
                 'Profile',
                 'Deploy Model', 
-                'Explorer',
+                # 'Explorer',  # REMOVED - we want to click this to access GPUs
                 'Help & Support',
                 'Healthy',
                 'Nosana dashboard',
@@ -91,10 +93,15 @@ class ScrapingConfig:
         if self.excluded_text_patterns is None:
             self.excluded_text_patterns = [
                 'logout',
-                'sign out',
+                'sign out', 
+                'sign-out',
+                'log out',
                 'delete',
                 'remove',
-                'cancel'
+                'cancel',
+                'close account',
+                'terminate',
+                'destroy'
             ]
 
 class NosanaScraper:
@@ -185,6 +192,60 @@ class NosanaScraper:
         
         return clickable_elements
     
+    def capture_hover_data(self, elements_to_hover: List) -> Dict[str, str]:
+        """Capture data that appears on hover (tooltips, popups, etc.)"""
+        hover_data = {}
+        
+        if not self.driver:
+            return hover_data
+            
+        try:
+            actions = ActionChains(self.driver)
+            
+            for element in elements_to_hover:
+                try:
+                    # Hover over the element
+                    actions.move_to_element(element).perform()
+                    time.sleep(1)  # Wait for hover content to appear
+                    
+                    # Look for tooltip/popup content
+                    tooltip_selectors = [
+                        '[role="tooltip"]',
+                        '.tooltip',
+                        '.popup',
+                        '.hover-content',
+                        '[data-tooltip]',
+                        '.tippy-content',  # Common tooltip library
+                        '.ant-tooltip',    # Ant Design tooltips
+                    ]
+                    
+                    for selector in tooltip_selectors:
+                        tooltips = self.driver.find_elements(By.CSS_SELECTOR, selector)
+                        for tooltip in tooltips:
+                            if tooltip.is_displayed():
+                                tooltip_text = tooltip.text.strip()
+                                if tooltip_text:
+                                    element_text = element.text.strip()[:50]  # First 50 chars as key
+                                    hover_data[f"hover_{element_text}"] = tooltip_text
+                    
+                    # Also check for any newly appeared text elements
+                    time.sleep(0.5)
+                    current_body = self.driver.find_element(By.TAG_NAME, "body")
+                    current_text = current_body.text
+                    
+                    # Move mouse away to clear hover state
+                    actions.move_by_offset(100, 100).perform()
+                    time.sleep(0.5)
+                    
+                except Exception as e:
+                    logger.debug(f"Error capturing hover data for element: {e}")
+                    continue
+                    
+        except Exception as e:
+            logger.debug(f"Error in hover data capture: {e}")
+            
+        return hover_data
+
     def scrape_page(self, url: str, depth: int = 0, source_url: Optional[str] = None) -> ScrapedPage:
         """Scrape a single page and extract relevant information"""
         logger.info(f"Scraping page at depth {depth}: {url}")
@@ -235,13 +296,41 @@ class NosanaScraper:
                 if name and content:
                     metadata[name] = content
             
+            # Capture hover data from hoverable elements
+            hover_data = {}
+            try:
+                # Find elements that might have hover data (common patterns)
+                hoverable_selectors = [
+                    '[data-tooltip]',
+                    '[title]',
+                    '.map-region',  # Geographic elements
+                    '.country',
+                    '.region', 
+                    '.host-info',
+                    '.gpu-info',
+                    '[data-hover]',
+                    '.hoverable'
+                ]
+                
+                hoverable_elements = []
+                for selector in hoverable_selectors:
+                    elements = self.driver.find_elements(By.CSS_SELECTOR, selector)
+                    hoverable_elements.extend(elements[:5])  # Limit to first 5 per selector
+                
+                if hoverable_elements:
+                    hover_data = self.capture_hover_data(hoverable_elements)
+                    
+            except Exception as e:
+                logger.debug(f"Error finding hoverable elements: {e}")
+            
             scraped_page = ScrapedPage(
                 url=url,
-                title=title,
+                title=title or "No Title",
                 text_content=text_content,
                 links=links,
                 images=images,
                 metadata=metadata,
+                hover_data=hover_data,
                 timestamp=datetime.now().isoformat(),
                 depth=depth,
                 source_url=source_url
@@ -345,10 +434,13 @@ def main():
     )
     
     # You can customize excluded elements here
-    config.excluded_elements.extend([
-        'GPUs Available',  # Add any additional elements to exclude
-        '311/1132'
-    ])
+    # NOTE: Explorer is NOT excluded - we want to click it to access GPUs and Host Leaderboard
+    if config.excluded_elements:
+        config.excluded_elements.extend([
+            'GPUs Available',  # The counter text, not the actual GPU links
+            '311/1132',       # The specific numbers  
+            # Add any additional elements to exclude
+        ])
     
     # Create and run scraper
     scraper = NosanaScraper(config)

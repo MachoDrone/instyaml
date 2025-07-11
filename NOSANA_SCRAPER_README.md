@@ -71,17 +71,19 @@ clickable_selectors = [
 
 **You control this through exclusion lists:**
 
-#### **By Text Content** (what you provided is already configured):
+#### **By Text Content** (configured based on your requirements):
 ```python
 excluded_elements = [
     'Profile',
     'Deploy Model', 
-    'Explorer',
+    # 'Explorer',  # REMOVED - you want to click this to access GPUs
     'Help & Support',
     'Healthy',
-    'Nosana dashboard',
+    'Nosana dashboard', 
     'Select Wallet',
-    '© 2025 Nosana'
+    '© 2025 Nosana',
+    'GPUs Available',  # The counter text, not the GPU section
+    '311/1132'         # The specific numbers
 ]
 ```
 
@@ -113,6 +115,25 @@ config = ScrapingConfig(
 - **Depth 1**: Main page + any pages reached by one click
 - **Depth 2**: Main page + one-click pages + pages reached from those
 - **Depth 3+**: Continues the pattern
+
+## Navigation Strategy for Nosana Dashboard
+
+Based on your requirements, the scraper follows this path:
+
+### **Depth 0**: Main Dashboard
+- Captures hover data (country info: "United States", "235 online hosts", etc.)
+- Identifies "Explorer" as a clickable element
+
+### **Depth 1**: Explorer Section
+- Clicks on "Explorer" (NOT excluded)
+- Finds "GPUs" and "Host Leaderboard" options
+- Will click through to "GPUs" for deeper scraping
+
+### **Depth 2+**: GPU Details
+- Navigates through GPU-related pages
+- Future path to "Host Leaderboard" data
+
+**Key Point**: Explorer is specifically **allowed** in the configuration to enable this navigation path.
 
 ## Configuration Examples
 
@@ -181,8 +202,13 @@ config.clickable_selectors.extend([
 
 ### **✅ Multiple Output Formats**
 - JSON for structured data analysis
-- CSV for spreadsheet compatibility
+- CSV for spreadsheet compatibility  
 - TXT for human-readable output
+
+### **✅ Hover Data Capture**
+- Automatically captures tooltip/popup data on hover
+- Detects country information like "United States", "235 online hosts", etc.
+- Configurable hover selectors for different tooltip systems
 
 ### **✅ Respectful Scraping**
 - Configurable delays between requests
@@ -207,11 +233,15 @@ Each scraped page includes:
 ```json
 {
   "url": "https://dashboard.nosana.com/some-page",
-  "title": "Page Title",
+  "title": "Page Title", 
   "text_content": "All visible text from the page",
   "links": ["array", "of", "all", "links", "found"],
   "images": ["array", "of", "image", "urls"],
   "metadata": {"description": "meta tags", "keywords": "etc"},
+  "hover_data": {
+    "hover_United States": "235 online hosts, 162 running, 73 available",
+    "hover_Europe": "150 online hosts, 89 running, 61 available"
+  },
   "timestamp": "2024-01-01T12:00:00",
   "depth": 1,
   "source_url": "https://dashboard.nosana.com/"

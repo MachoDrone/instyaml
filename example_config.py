@@ -17,11 +17,13 @@ def main():
     )
     
     # Customize excluded elements (add more as needed)
-    config.excluded_elements.extend([
-        'GPUs Available',
-        '311/1132',
-        # Add any other elements you want to avoid
-    ])
+    # NOTE: Explorer is NOT excluded - we want to click it to access GPUs
+    if config.excluded_elements:
+        config.excluded_elements.extend([
+            'GPUs Available',  # The counter text, not the actual GPU section
+            '311/1132',       # The specific numbers
+            # Add any other elements you want to avoid
+        ])
     
     # Add custom clickable selectors if needed
     # config.clickable_selectors.extend([
